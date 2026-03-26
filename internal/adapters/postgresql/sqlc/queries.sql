@@ -12,6 +12,9 @@ FROM
 WHERE
     id = $1;
 
+-- name: CreateProduct :one
+INSERT INTO products (name, price_in_cents) VALUES ($1, $2) RETURNING *;
+
 -- name: CreateOrder :one
 INSERT INTO orders (customer_id) VALUES ($1) RETURNING *;
 

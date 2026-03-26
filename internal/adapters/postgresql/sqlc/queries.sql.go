@@ -50,6 +50,28 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 	return i, err
 }
 
+const createProduct = `-- name: CreateProduct :one
+INSERT INTO products (name, price_in_cents) VALUES ($1, $2) RETURNING id, name, price_in_cents, quantity, created_at
+`
+
+type CreateProductParams struct {
+	Name         string `json:"name"`
+	PriceInCents int32  `json:"price_in_cents"`
+}
+
+func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error) {
+	row := q.db.QueryRow(ctx, createProduct, arg.Name, arg.PriceInCents)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.PriceInCents,
+		&i.Quantity,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const findProductById = `-- name: FindProductById :one
 SELECT
  id, name, price_in_cents, quantity, created_at

@@ -40,3 +40,21 @@ func (h *handler) FindProductById(w http.ResponseWriter, r *http.Request) {
 
 	json.Write(w, http.StatusOK, product)
 }
+
+func (h *handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
+	var tempProduct createProductParams
+	if err := json.Read(r, &tempProduct); err != nil {
+		log.Println("Error reading request body:", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	createdProduct, err := h.service.CreateProduct(r.Context(), tempProduct)
+	if err != nil {
+		log.Printf("Error creating product: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.Write(w, http.StatusCreated, createdProduct)
+}

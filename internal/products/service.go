@@ -6,11 +6,6 @@ import (
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 )
 
-type Service interface {
-	ListProducts(ctx context.Context) ([]repo.Product, error)
-	FindProductById(ctx context.Context, id int64) (repo.Product, error)
-}
-
 type svc struct {
 	repo repo.Querier
 }
@@ -26,4 +21,11 @@ func (s *svc) ListProducts(ctx context.Context) ([]repo.Product, error) {
 
 func (s *svc) FindProductById(ctx context.Context, id int64) (repo.Product, error) {
 	return s.repo.FindProductById(ctx, id)
+}
+
+func (s *svc) CreateProduct(ctx context.Context, tempProduct createProductParams) (repo.Product, error) {
+	return s.repo.CreateProduct(ctx, repo.CreateProductParams{
+		Name:         tempProduct.Name,
+		PriceInCents: tempProduct.PriceInCents,
+	})
 }
