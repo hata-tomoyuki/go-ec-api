@@ -29,3 +29,11 @@ func (s *svc) CreateProduct(ctx context.Context, tempProduct createProductParams
 		PriceInCents: tempProduct.PriceInCents,
 	})
 }
+
+func (s *svc) UpdateProduct(ctx context.Context, tempProduct updateProductParams) (repo.Product, error) {
+	return s.repo.UpdateProduct(ctx, repo.UpdateProductParams{
+		ID:           tempProduct.ID,
+		Name:         tempProduct.Name,
+		PriceInCents: tempProduct.PriceInCents,
+	})
+}

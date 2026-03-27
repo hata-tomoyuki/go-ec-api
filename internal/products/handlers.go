@@ -58,3 +58,30 @@ func (h *handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	json.Write(w, http.StatusCreated, createdProduct)
 }
+
+func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	var tempProduct updateProductParams
+	if err := json.Read(r, &tempProduct); err != nil {
+		log.Println("Error reading request body:", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	tempProduct.ID = id
+
+	updatedProduct, err := h.service.UpdateProduct(r.Context(), tempProduct)
+	if err != nil {
+		log.Printf("Error updating product: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.Write(w, http.StatusOK, updatedProduct)
+}
