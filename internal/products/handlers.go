@@ -21,7 +21,7 @@ func (h *handler) ListProduct(w http.ResponseWriter, r *http.Request) {
 	products, err := h.service.ListProducts(r.Context())
 	if err != nil {
 		log.Printf("Error listing products: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -31,10 +31,16 @@ func (h *handler) ListProduct(w http.ResponseWriter, r *http.Request) {
 func (h *handler) FindProductById(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		log.Printf("Error parsing product ID: %v", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid product ID")
+		return
+	}
+
 	product, err := h.service.FindProductById(r.Context(), id)
 	if err != nil {
 		log.Printf("Error finding product: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -45,14 +51,14 @@ func (h *handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var tempProduct createProductParams
 	if err := json.Read(r, &tempProduct); err != nil {
 		log.Println("Error reading request body:", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	createdProduct, err := h.service.CreateProduct(r.Context(), tempProduct)
 	if err != nil {
 		log.Printf("Error creating product: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -63,7 +69,8 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		log.Printf("Error parsing product ID: %v", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
 
@@ -79,7 +86,7 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	updatedProduct, err := h.service.UpdateProduct(r.Context(), tempProduct)
 	if err != nil {
 		log.Printf("Error updating product: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -91,14 +98,15 @@ func (h *handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(idStr, 10, 64)
 
 	if err != nil {
-		http.Error(w, "invalid id", http.StatusBadRequest)
+		log.Printf("Error parsing product ID: %v", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
 
 	err = h.service.DeleteProduct(r.Context(), id)
 	if err != nil {
 		log.Printf("Error deleting product: %v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

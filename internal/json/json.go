@@ -11,6 +11,11 @@ func Write(w http.ResponseWriter, status int, data any) {
 	json.NewEncoder(w).Encode(data)
 }
 
+// WriteError は {"error":"..."} 形式の JSON でエラーを返します。
+func WriteError(w http.ResponseWriter, status int, message string) {
+	Write(w, status, map[string]string{"error": message})
+}
+
 func Read(r *http.Request, data any) error {
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
