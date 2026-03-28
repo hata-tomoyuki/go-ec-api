@@ -22,4 +22,5 @@ type Service interface {
 	FindProductById(ctx context.Context, id int64) (repo.Product, error)
 	CreateProduct(ctx context.Context, tempProduct createProductParams) (repo.Product, error)
 	UpdateProduct(ctx context.Context, tempProduct updateProductParams) (repo.Product, error)
+	DeleteProduct(ctx context.Context, id int64) error
 }

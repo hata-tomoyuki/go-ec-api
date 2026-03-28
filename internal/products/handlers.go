@@ -85,3 +85,22 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 
 	json.Write(w, http.StatusOK, updatedProduct)
 }
+
+func (h *handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+
+	if err != nil {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	err = h.service.DeleteProduct(r.Context(), id)
+	if err != nil {
+		log.Printf("Error deleting product: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}

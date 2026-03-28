@@ -21,6 +21,11 @@ SET name = $2, price_in_cents = $3
 WHERE id = $1
 RETURNING *;
 
+-- name: DeleteProduct :one
+DELETE FROM products
+WHERE id = $1
+RETURNING *;
+
 -- name: CreateOrder :one
 INSERT INTO orders (customer_id) VALUES ($1) RETURNING *;
 

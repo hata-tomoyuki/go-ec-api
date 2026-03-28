@@ -37,3 +37,8 @@ func (s *svc) UpdateProduct(ctx context.Context, tempProduct updateProductParams
 		PriceInCents: tempProduct.PriceInCents,
 	})
 }
+
+func (s *svc) DeleteProduct(ctx context.Context, id int64) error {
+	_, err := s.repo.DeleteProduct(ctx, id)
+	return err
+}
