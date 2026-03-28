@@ -29,3 +29,11 @@ type Product struct {
 	Quantity     int32              `json:"quantity"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
+
+type User struct {
+	ID           int64              `json:"id"`
+	Name         string             `json:"name"`
+	Email        string             `json:"email"`
+	PasswordHash string             `json:"password_hash"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}

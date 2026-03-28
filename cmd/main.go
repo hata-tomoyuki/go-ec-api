@@ -6,8 +6,15 @@ import (
 	"os"
 
 	"example.com/ecommerce/internal/env"
+	"github.com/go-chi/jwtauth/v5"
 	"github.com/jackc/pgx/v5"
 )
+
+var tokenAuth *jwtauth.JWTAuth
+
+func init() {
+	tokenAuth = jwtauth.New("HS256", []byte("your-secret-key"), nil)
+}
 
 func main() {
 	ctx := context.Background()
