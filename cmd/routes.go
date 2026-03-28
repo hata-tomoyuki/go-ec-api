@@ -33,8 +33,8 @@ func (app *application) mount() http.Handler {
 
 	authService := auth.NewService(repo.New(app.db), tokenAuth)
 	authHandler := auth.NewHandler(authService)
-	r.Post("/users/register", authHandler.RegisterUser)
-	r.Post("/users/login", authHandler.Login)
+	r.Post("/auth/register", authHandler.RegisterUser)
+	r.Post("/auth/login", authHandler.Login)
 
 	r.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(tokenAuth))
