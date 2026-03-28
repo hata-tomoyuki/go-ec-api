@@ -31,9 +31,10 @@ func (app *application) mount() http.Handler {
 	r.Get("/products", productHandler.ListProduct)
 	r.Get("/products/{id}", productHandler.FindProductById)
 
-	authService := auth.NewService(repo.New(app.db), app.db)
+	authService := auth.NewService(repo.New(app.db), tokenAuth)
 	authHandler := auth.NewHandler(authService)
 	r.Post("/users/register", authHandler.RegisterUser)
+	r.Post("/users/login", authHandler.Login)
 
 	r.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(tokenAuth))

@@ -12,6 +12,11 @@ type registerParams struct {
 	Name     string `json:"name"`
 }
 
+type loginParams struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
 type userResponse struct {
 	ID    int64  `json:"id"`
 	Name  string `json:"name"`
@@ -20,4 +25,5 @@ type userResponse struct {
 
 type Service interface {
 	RegisterUser(ctx context.Context, params registerParams) (repo.User, error)
+	Login(ctx context.Context, params loginParams) (string, error)
 }

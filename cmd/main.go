@@ -13,7 +13,7 @@ import (
 var tokenAuth *jwtauth.JWTAuth
 
 func init() {
-	tokenAuth = jwtauth.New("HS256", []byte("your-secret-key"), nil)
+	tokenAuth = jwtauth.New("HS256", []byte(env.GetString("JWT_SECRET", "your-secret-key")), nil)
 }
 
 func main() {

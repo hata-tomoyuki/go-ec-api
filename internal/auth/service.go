@@ -2,18 +2,24 @@ package auth
 
 import (
 	"context"
+	"errors"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
+	"github.com/go-chi/jwtauth/v5"
 	"github.com/jackc/pgx/v5"
 )
 
+var ErrInvalidCredentials = errors.New("invalid email or password")
+
 type svc struct {
 	repo *repo.Queries
+	ja   *jwtauth.JWTAuth
 }
 
-func NewService(repo *repo.Queries, db *pgx.Conn) Service {
+func NewService(repo *repo.Queries, ja *jwtauth.JWTAuth) Service {
 	return &svc{
 		repo: repo,
+		ja:   ja,
 	}
 }
 
@@ -28,4 +34,25 @@ func (s *svc) RegisterUser(ctx context.Context, params registerParams) (repo.Use
 		PasswordHash: hashedPassword,
 		Name:         params.Name,
 	})
+}
+
+func (s *svc) Login(ctx context.Context, params loginParams) (string, error) {
+	user, err := s.repo.FindUserByEmail(ctx, params.Email)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", ErrInvalidCredentials
+		}
+		return "", err
+	}
+
+	if err := checkPasswordHash(params.Password, user.PasswordHash); err != nil {
+		return "", ErrInvalidCredentials
+	}
+
+	token, err := generateJWT(s.ja, user.ID, user.Email)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
 }
