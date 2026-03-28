@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"time"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 )
@@ -26,4 +27,5 @@ type userResponse struct {
 type Service interface {
 	RegisterUser(ctx context.Context, params registerParams) (repo.User, error)
 	Login(ctx context.Context, params loginParams) (string, error)
+	Logout(ctx context.Context, jti string, expired_at time.Time) error
 }

@@ -30,6 +30,11 @@ type Product struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 }
 
+type RevokedToken struct {
+	Jti       string             `json:"jti"`
+	ExpiredAt pgtype.Timestamptz `json:"expired_at"`
+}
+
 type User struct {
 	ID           int64              `json:"id"`
 	Name         string             `json:"name"`

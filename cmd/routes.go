@@ -26,26 +26,30 @@ func (app *application) mount() http.Handler {
 		w.Write([]byte("Hello, World!"))
 	})
 
-	productService := products.NewService(repo.New(app.db))
+	queries := repo.New(app.db)
+
+	productService := products.NewService(queries)
 	productHandler := products.NewHandler(productService)
 	r.Get("/products", productHandler.ListProduct)
 	r.Get("/products/{id}", productHandler.FindProductById)
 
-	authService := auth.NewService(repo.New(app.db), tokenAuth)
+	authService := auth.NewService(queries, tokenAuth)
 	authHandler := auth.NewHandler(authService)
 	r.Post("/auth/register", authHandler.RegisterUser)
 	r.Post("/auth/login", authHandler.Login)
 
 	r.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(tokenAuth))
-		r.Use(auth.JWTAuthenticator)
+		r.Use(auth.JWTAuthenticator(queries))
+
+		r.Post("/auth/logout", authHandler.Logout)
 
 		r.Post("/products", productHandler.CreateProduct)
 		r.Put("/products/{id}", productHandler.UpdateProduct)
 		r.Delete("/products/{id}", productHandler.DeleteProduct)
 	})
 
-	orderService := orders.NewService(repo.New(app.db), app.db)
+	orderService := orders.NewService(queries, app.db)
 	ordersHandler := orders.NewHandler(orderService)
 	r.Post("/orders", ordersHandler.PlaceOrder)
 

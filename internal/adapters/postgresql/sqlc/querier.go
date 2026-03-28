@@ -16,7 +16,9 @@ type Querier interface {
 	DeleteProduct(ctx context.Context, id int64) (Product, error)
 	FindProductById(ctx context.Context, id int64) (Product, error)
 	FindUserByEmail(ctx context.Context, email string) (User, error)
+	IsTokenRevoked(ctx context.Context, jti string) (bool, error)
 	ListProducts(ctx context.Context) ([]Product, error)
+	RevokeToken(ctx context.Context, arg RevokeTokenParams) error
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (Product, error)
 }
 

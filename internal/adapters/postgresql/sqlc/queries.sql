@@ -39,3 +39,8 @@ INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING *;
 -- name: FindUserByEmail :one
 SELECT * FROM users WHERE email = $1;
 
+-- name: RevokeToken :exec
+INSERT INTO revoked_tokens (jti, expired_at) VALUES ($1, $2);
+
+-- name: IsTokenRevoked :one
+SELECT EXISTS (SELECT 1 FROM revoked_tokens WHERE jti = $1);

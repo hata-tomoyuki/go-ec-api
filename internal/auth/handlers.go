@@ -4,8 +4,10 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"example.com/ecommerce/internal/json"
+	"github.com/go-chi/jwtauth/v5"
 )
 
 type handler struct {
@@ -60,4 +62,33 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.Write(w, http.StatusOK, map[string]string{"token": token})
+}
+
+func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
+	token, claims, err := jwtauth.FromContext(r.Context())
+	if err != nil || token == nil {
+		json.WriteError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	jti, ok := claims["jti"].(string)
+	if !ok {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	exp, ok := claims["exp"].(float64)
+	if !ok {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	expiredAt := time.Unix(int64(exp), 0)
+	if err := h.service.Logout(r.Context(), jti, expiredAt); err != nil {
+		log.Printf("Error logging out user: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, map[string]string{"message": "Logged out successfully"})
 }

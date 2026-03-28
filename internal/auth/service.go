@@ -3,10 +3,12 @@ package auth
 import (
 	"context"
 	"errors"
+	"time"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 var ErrInvalidCredentials = errors.New("invalid email or password")
@@ -55,4 +57,14 @@ func (s *svc) Login(ctx context.Context, params loginParams) (string, error) {
 	}
 
 	return token, nil
+}
+
+func (s *svc) Logout(ctx context.Context, jti string, expired_at time.Time) error {
+	return s.repo.RevokeToken(ctx, repo.RevokeTokenParams{
+		Jti: jti,
+		ExpiredAt: pgtype.Timestamptz{
+			Time:  expired_at,
+			Valid: true,
+		},
+	})
 }

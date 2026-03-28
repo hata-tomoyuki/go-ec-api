@@ -7,6 +7,8 @@ package repo
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createOrder = `-- name: CreateOrder :one
@@ -153,6 +155,17 @@ func (q *Queries) FindUserByEmail(ctx context.Context, email string) (User, erro
 	return i, err
 }
 
+const isTokenRevoked = `-- name: IsTokenRevoked :one
+SELECT EXISTS (SELECT 1 FROM revoked_tokens WHERE jti = $1)
+`
+
+func (q *Queries) IsTokenRevoked(ctx context.Context, jti string) (bool, error) {
+	row := q.db.QueryRow(ctx, isTokenRevoked, jti)
+	var exists bool
+	err := row.Scan(&exists)
+	return exists, err
+}
+
 const listProducts = `-- name: ListProducts :many
 SELECT
  id, name, price_in_cents, quantity, created_at
@@ -184,6 +197,20 @@ func (q *Queries) ListProducts(ctx context.Context) ([]Product, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const revokeToken = `-- name: RevokeToken :exec
+INSERT INTO revoked_tokens (jti, expired_at) VALUES ($1, $2)
+`
+
+type RevokeTokenParams struct {
+	Jti       string             `json:"jti"`
+	ExpiredAt pgtype.Timestamptz `json:"expired_at"`
+}
+
+func (q *Queries) RevokeToken(ctx context.Context, arg RevokeTokenParams) error {
+	_, err := q.db.Exec(ctx, revokeToken, arg.Jti, arg.ExpiredAt)
+	return err
 }
 
 const updateProduct = `-- name: UpdateProduct :one
