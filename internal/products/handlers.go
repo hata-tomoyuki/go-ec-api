@@ -1,6 +1,7 @@
 package products
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -39,6 +40,10 @@ func (h *handler) FindProductById(w http.ResponseWriter, r *http.Request) {
 
 	product, err := h.service.FindProductById(r.Context(), id)
 	if err != nil {
+		if errors.Is(err, ErrProductNotFound) {
+			json.WriteError(w, http.StatusNotFound, err.Error())
+			return
+		}
 		log.Printf("Error finding product: %v", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -77,7 +82,7 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	var tempProduct updateProductParams
 	if err := json.Read(r, &tempProduct); err != nil {
 		log.Println("Error reading request body:", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
@@ -85,6 +90,10 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 
 	updatedProduct, err := h.service.UpdateProduct(r.Context(), tempProduct)
 	if err != nil {
+		if errors.Is(err, ErrProductNotFound) {
+			json.WriteError(w, http.StatusNotFound, err.Error())
+			return
+		}
 		log.Printf("Error updating product: %v", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -96,7 +105,6 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 func (h *handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
-
 	if err != nil {
 		log.Printf("Error parsing product ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid product ID")
@@ -105,6 +113,10 @@ func (h *handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 
 	err = h.service.DeleteProduct(r.Context(), id)
 	if err != nil {
+		if errors.Is(err, ErrProductNotFound) {
+			json.WriteError(w, http.StatusNotFound, err.Error())
+			return
+		}
 		log.Printf("Error deleting product: %v", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return

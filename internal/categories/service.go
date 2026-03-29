@@ -2,8 +2,10 @@ package categories
 
 import (
 	"context"
+	"errors"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -35,7 +37,14 @@ func (s *svc) CreateCategories(ctx context.Context, name string, description *st
 }
 
 func (s *svc) FindCategoryById(ctx context.Context, id int64) (repo.Category, error) {
-	return s.repo.FindCategoryById(ctx, id)
+	category, err := s.repo.FindCategoryById(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.Category{}, ErrCategoryNotFound
+		}
+		return repo.Category{}, err
+	}
+	return category, nil
 }
 
 func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, description *string) (repo.Category, error) {
@@ -47,16 +56,29 @@ func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, descr
 		}
 	}
 
-	return s.repo.UpdateCategory(ctx, repo.UpdateCategoryParams{
+	category, err := s.repo.UpdateCategory(ctx, repo.UpdateCategoryParams{
 		ID:          id,
 		Name:        name,
 		Description: desc,
 	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.Category{}, ErrCategoryNotFound
+		}
+		return repo.Category{}, err
+	}
+	return category, nil
 }
 
 func (s *svc) DeleteCategory(ctx context.Context, id int64) error {
 	_, err := s.repo.DeleteCategory(ctx, id)
-	return err
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrCategoryNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 func (s *svc) ListProductsByCategory(ctx context.Context, categoryId int64) ([]repo.Product, error) {

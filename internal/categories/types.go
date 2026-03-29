@@ -2,9 +2,12 @@ package categories
 
 import (
 	"context"
+	"errors"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 )
+
+var ErrCategoryNotFound = errors.New("category not found")
 
 type Service interface {
 	ListCategories(ctx context.Context) ([]repo.Category, error)

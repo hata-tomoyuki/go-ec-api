@@ -1,6 +1,7 @@
 package categories
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -56,8 +57,11 @@ func (h *handler) FindCategoryById(w http.ResponseWriter, r *http.Request) {
 	}
 
 	category, err := h.service.FindCategoryById(r.Context(), id)
-
 	if err != nil {
+		if errors.Is(err, ErrCategoryNotFound) {
+			json.WriteError(w, http.StatusNotFound, err.Error())
+			return
+		}
 		log.Printf("Error finding category: %v", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -84,6 +88,10 @@ func (h *handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 
 	updatedCategory, err := h.service.UpdateCategories(r.Context(), id, tempCategory.Name, tempCategory.Description)
 	if err != nil {
+		if errors.Is(err, ErrCategoryNotFound) {
+			json.WriteError(w, http.StatusNotFound, err.Error())
+			return
+		}
 		log.Printf("Error updating category: %v", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -102,10 +110,16 @@ func (h *handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.DeleteCategory(r.Context(), id); err != nil {
+		if errors.Is(err, ErrCategoryNotFound) {
+			json.WriteError(w, http.StatusNotFound, err.Error())
+			return
+		}
 		log.Printf("Error deleting category: %v", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *handler) ListProductsByCategory(w http.ResponseWriter, r *http.Request) {
@@ -177,4 +191,6 @@ func (h *handler) RemoveProductFromCategory(w http.ResponseWriter, r *http.Reque
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

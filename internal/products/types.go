@@ -2,9 +2,12 @@ package products
 
 import (
 	"context"
+	"errors"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 )
+
+var ErrProductNotFound = errors.New("product not found")
 
 type createProductParams struct {
 	Name         string `json:"name"`

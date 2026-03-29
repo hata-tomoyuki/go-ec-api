@@ -2,8 +2,15 @@ package orders
 
 import (
 	"context"
+	"errors"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
+)
+
+var (
+	ErrOrderNotFound    = errors.New("order not found")
+	ErrOrderNotPending  = errors.New("only pending orders can be cancelled")
+	ErrOrderForbidden   = errors.New("you do not have permission to access this order")
 )
 
 type orderItem struct {

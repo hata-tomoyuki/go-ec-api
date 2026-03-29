@@ -1,6 +1,7 @@
 package orders
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
@@ -49,8 +50,7 @@ func (h *handler) ListAllOrders(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
-	orderIDStr := chi.URLParam(r, "id")
-	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
+	orderID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid order ID")
 		return
@@ -64,19 +64,17 @@ func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.service.FindOrderById(r.Context(), orderID)
 	if err != nil {
-		log.Printf("Error finding order: %v", err)
-
-		if err.Error() == "sql: no rows in result set" {
-			json.WriteError(w, http.StatusNotFound, "Order not found")
+		if errors.Is(err, ErrOrderNotFound) {
+			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-
+		log.Printf("Error finding order: %v", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if order.CustomerID != customerID {
-		json.WriteError(w, http.StatusForbidden, "You do not have permission to access this order")
+		json.WriteError(w, http.StatusForbidden, ErrOrderForbidden.Error())
 		return
 	}
 
@@ -87,20 +85,18 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	var tempOrder createOrderParams
 	if err := json.Read(r, &tempOrder); err != nil {
 		log.Println("Error reading request body:", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	createdOrder, err := h.service.PlaceOrder(r.Context(), tempOrder)
 	if err != nil {
 		log.Printf("Error placing order: %v", err)
-
-		if err == ErrorProductNotFound {
-			http.Error(w, err.Error(), http.StatusNotFound)
+		if errors.Is(err, ErrorProductNotFound) {
+			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
@@ -108,8 +104,7 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
-	orderIDStr := chi.URLParam(r, "id")
-	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
+	orderID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid order ID")
 		return
@@ -123,19 +118,20 @@ func (h *handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 
 	order, err := h.service.CancelOrder(r.Context(), orderID)
 	if err != nil {
-		log.Printf("Error canceling order: %v", err)
-
-		if err.Error() == "sql: no rows in result set" {
-			json.WriteError(w, http.StatusNotFound, "Order not found")
-			return
+		switch {
+		case errors.Is(err, ErrOrderNotFound):
+			json.WriteError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, ErrOrderNotPending):
+			json.WriteError(w, http.StatusBadRequest, err.Error())
+		default:
+			log.Printf("Error canceling order: %v", err)
+			json.WriteError(w, http.StatusInternalServerError, err.Error())
 		}
-
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	if order.CustomerID != customerID {
-		json.WriteError(w, http.StatusForbidden, "You do not have permission to cancel this order")
+		json.WriteError(w, http.StatusForbidden, ErrOrderForbidden.Error())
 		return
 	}
 
@@ -143,8 +139,7 @@ func (h *handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
-	orderIDStr := chi.URLParam(r, "id")
-	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
+	orderID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid order ID")
 		return
@@ -155,19 +150,17 @@ func (h *handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.Read(r, &req); err != nil {
 		log.Println("Error reading request body:", err)
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	updatedOrder, err := h.service.UpdateOrderStatus(r.Context(), orderID, req.Status)
 	if err != nil {
-		log.Printf("Error updating order status: %v", err)
-
-		if err.Error() == "sql: no rows in result set" {
-			json.WriteError(w, http.StatusNotFound, "Order not found")
+		if errors.Is(err, ErrOrderNotFound) {
+			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-
+		log.Printf("Error updating order status: %v", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

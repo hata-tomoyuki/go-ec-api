@@ -9,16 +9,16 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+var (
+	ErrorProductNotFound = errors.New("product not found")
+	ErrorProductNoStock  = errors.New("product out of stock")
+)
+
 // pgBeginner はトランザクションを開始できる任意の接続型を抽象化する。
 // *pgx.Conn と *pgxpool.Pool の両方がこの interface を満たす。
 type pgBeginner interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
-
-var (
-	ErrorProductNotFound = errors.New("product not found")
-	ErrorProductNoStock  = errors.New("product out of stock")
-)
 
 type svc struct {
 	repo *repo.Queries
@@ -41,7 +41,14 @@ func (s *svc) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRow, error
 }
 
 func (s *svc) FindOrderById(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
-	return s.repo.FindOrderById(ctx, orderID)
+	order, err := s.repo.FindOrderById(ctx, orderID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.FindOrderByIdRow{}, ErrOrderNotFound
+		}
+		return repo.FindOrderByIdRow{}, err
+	}
+	return order, nil
 }
 
 func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo.Order, error) {
@@ -92,11 +99,14 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 func (s *svc) CancelOrder(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
 	order, err := s.repo.FindOrderById(ctx, orderID)
 	if err != nil {
-		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to find order: %w", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.FindOrderByIdRow{}, ErrOrderNotFound
+		}
+		return repo.FindOrderByIdRow{}, err
 	}
 
 	if order.Status != "pending" {
-		return repo.FindOrderByIdRow{}, fmt.Errorf("only pending orders can be cancelled")
+		return repo.FindOrderByIdRow{}, ErrOrderNotPending
 	}
 
 	_, err = s.repo.CancelOrder(ctx, orderID)
@@ -110,7 +120,10 @@ func (s *svc) CancelOrder(ctx context.Context, orderID int64) (repo.FindOrderByI
 func (s *svc) UpdateOrderStatus(ctx context.Context, orderID int64, status string) (repo.FindOrderByIdRow, error) {
 	_, err := s.repo.FindOrderById(ctx, orderID)
 	if err != nil {
-		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to find order: %w", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.FindOrderByIdRow{}, ErrOrderNotFound
+		}
+		return repo.FindOrderByIdRow{}, err
 	}
 
 	_, err = s.repo.UpdateOrderStatus(ctx, repo.UpdateOrderStatusParams{
