@@ -217,8 +217,11 @@ RETURNING *;
 DELETE FROM cart_items
 WHERE cart_id = (SELECT id FROM carts WHERE user_id = $1);
 
--- name: FindAddressByUserId :one
-SELECT * FROM addresses WHERE user_id = $1;
+-- name: ListAddressesByUserId :many
+SELECT * FROM addresses WHERE user_id = $1 ORDER BY created_at DESC;
+
+-- name: FindAddressById :one
+SELECT * FROM addresses WHERE id = $1;
 
 -- name: CreateAddress :one
 INSERT INTO addresses (user_id, street, city, state, zip_code, country) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
@@ -226,10 +229,8 @@ INSERT INTO addresses (user_id, street, city, state, zip_code, country) VALUES (
 -- name: UpdateAddress :one
 UPDATE addresses
 SET street = $2, city = $3, state = $4, zip_code = $5, country = $6, updated_at = now()
-WHERE user_id = $1
+WHERE id = $1
 RETURNING *;
 
--- name: DeleteAddress :one
-DELETE FROM addresses
-WHERE user_id = $1
-RETURNING *;
+-- name: DeleteAddress :exec
+DELETE FROM addresses WHERE id = $1;

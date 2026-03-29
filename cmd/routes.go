@@ -79,10 +79,11 @@ func (app *application) mount() http.Handler {
 		r.Delete("/cart/items/{id}", cartsHandler.RemoveItemFromCart)
 		r.Delete("/cart", cartsHandler.ClearCart)
 
-		r.Get("/addresses", addressHandler.FindAddressByUserId)
+		r.Get("/addresses", addressHandler.ListAddresses)
 		r.Post("/addresses", addressHandler.CreateAddress)
-		r.Put("/addresses", addressHandler.UpdateAddress)
-		r.Delete("/addresses", addressHandler.DeleteAddress)
+		r.Get("/addresses/{id}", addressHandler.FindAddressById)
+		r.Put("/addresses/{id}", addressHandler.UpdateAddress)
+		r.Delete("/addresses/{id}", addressHandler.DeleteAddress)
 
 		// 管理者のみ
 		r.Group(func(r chi.Router) {

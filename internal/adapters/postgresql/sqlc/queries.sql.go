@@ -273,27 +273,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const deleteAddress = `-- name: DeleteAddress :one
-DELETE FROM addresses
-WHERE user_id = $1
-RETURNING id, user_id, street, city, state, zip_code, country, created_at, updated_at
+const deleteAddress = `-- name: DeleteAddress :exec
+DELETE FROM addresses WHERE id = $1
 `
 
-func (q *Queries) DeleteAddress(ctx context.Context, userID int64) (Address, error) {
-	row := q.db.QueryRow(ctx, deleteAddress, userID)
-	var i Address
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.Street,
-		&i.City,
-		&i.State,
-		&i.ZipCode,
-		&i.Country,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
-	return i, err
+func (q *Queries) DeleteAddress(ctx context.Context, id int32) error {
+	_, err := q.db.Exec(ctx, deleteAddress, id)
+	return err
 }
 
 const deleteCategory = `-- name: DeleteCategory :one
@@ -361,12 +347,12 @@ func (q *Queries) DeleteRefreshTokensByUserId(ctx context.Context, userID int64)
 	return err
 }
 
-const findAddressByUserId = `-- name: FindAddressByUserId :one
-SELECT id, user_id, street, city, state, zip_code, country, created_at, updated_at FROM addresses WHERE user_id = $1
+const findAddressById = `-- name: FindAddressById :one
+SELECT id, user_id, street, city, state, zip_code, country, created_at, updated_at FROM addresses WHERE id = $1
 `
 
-func (q *Queries) FindAddressByUserId(ctx context.Context, userID int64) (Address, error) {
-	row := q.db.QueryRow(ctx, findAddressByUserId, userID)
+func (q *Queries) FindAddressById(ctx context.Context, id int32) (Address, error) {
+	row := q.db.QueryRow(ctx, findAddressById, id)
 	var i Address
 	err := row.Scan(
 		&i.ID,
@@ -536,6 +522,40 @@ func (q *Queries) IsTokenRevoked(ctx context.Context, jti string) (bool, error) 
 	var exists bool
 	err := row.Scan(&exists)
 	return exists, err
+}
+
+const listAddressesByUserId = `-- name: ListAddressesByUserId :many
+SELECT id, user_id, street, city, state, zip_code, country, created_at, updated_at FROM addresses WHERE user_id = $1 ORDER BY created_at DESC
+`
+
+func (q *Queries) ListAddressesByUserId(ctx context.Context, userID int64) ([]Address, error) {
+	rows, err := q.db.Query(ctx, listAddressesByUserId, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Address
+	for rows.Next() {
+		var i Address
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.Street,
+			&i.City,
+			&i.State,
+			&i.ZipCode,
+			&i.Country,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const listAllOrders = `-- name: ListAllOrders :many
@@ -862,12 +882,12 @@ func (q *Queries) RevokeToken(ctx context.Context, arg RevokeTokenParams) error 
 const updateAddress = `-- name: UpdateAddress :one
 UPDATE addresses
 SET street = $2, city = $3, state = $4, zip_code = $5, country = $6, updated_at = now()
-WHERE user_id = $1
+WHERE id = $1
 RETURNING id, user_id, street, city, state, zip_code, country, created_at, updated_at
 `
 
 type UpdateAddressParams struct {
-	UserID  int64  `json:"user_id"`
+	ID      int32  `json:"id"`
 	Street  string `json:"street"`
 	City    string `json:"city"`
 	State   string `json:"state"`
@@ -877,7 +897,7 @@ type UpdateAddressParams struct {
 
 func (q *Queries) UpdateAddress(ctx context.Context, arg UpdateAddressParams) (Address, error) {
 	row := q.db.QueryRow(ctx, updateAddress,
-		arg.UserID,
+		arg.ID,
 		arg.Street,
 		arg.City,
 		arg.State,
