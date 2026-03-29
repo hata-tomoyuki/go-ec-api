@@ -91,3 +91,24 @@ func (s *svc) UpdateUser(ctx context.Context, userID int64, params updateUserPar
 		Email: email,
 	})
 }
+
+func (s *svc) UpdateUserPassword(ctx context.Context, userID int64, currentPassword, newPassword string) (repo.User, error) {
+	user, err := s.repo.FindUserById(ctx, userID)
+	if err != nil {
+		return repo.User{}, err
+	}
+
+	if err := checkPasswordHash(currentPassword, user.PasswordHash); err != nil {
+		return repo.User{}, ErrInvalidCredentials
+	}
+
+	hashedPassword, err := hashPassword(newPassword)
+	if err != nil {
+		return repo.User{}, err
+	}
+
+	return s.repo.UpdateUserPassword(ctx, repo.UpdateUserPasswordParams{
+		ID:           userID,
+		PasswordHash: hashedPassword,
+	})
+}

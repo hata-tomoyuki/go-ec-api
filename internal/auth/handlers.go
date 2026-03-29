@@ -158,3 +158,47 @@ func (h *handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		Role:  string(updatedUser.Role),
 	})
 }
+
+func (h *handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	_, claims, _ := jwtauth.FromContext(r.Context())
+
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	userID, err := strconv.ParseInt(sub, 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	var params struct {
+		CurrentPassword string `json:"current_password"`
+		NewPassword     string `json:"new_password"`
+	}
+	if err := json.Read(r, &params); err != nil {
+		log.Println("Error reading request body:", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	updatedUser, err := h.service.UpdateUserPassword(r.Context(), userID, params.CurrentPassword, params.NewPassword)
+	if err != nil {
+		log.Printf("Error updating user password: %v", err)
+		if errors.Is(err, ErrInvalidCredentials) {
+			json.WriteError(w, http.StatusUnauthorized, "Current password is incorrect")
+			return
+		}
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, userResponse{
+		ID:    updatedUser.ID,
+		Name:  updatedUser.Name,
+		Email: updatedUser.Email,
+		Role:  string(updatedUser.Role),
+	})
+}

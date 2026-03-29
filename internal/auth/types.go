@@ -35,4 +35,5 @@ type Service interface {
 	Login(ctx context.Context, params loginParams) (string, error)
 	Logout(ctx context.Context, jti string, expired_at time.Time) error
 	UpdateUser(ctx context.Context, userID int64, params updateUserParams) (repo.User, error)
+	UpdateUserPassword(ctx context.Context, userID int64, currentPassword, newPassword string) (repo.User, error)
 }
