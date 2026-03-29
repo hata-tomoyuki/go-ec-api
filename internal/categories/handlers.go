@@ -91,3 +91,19 @@ func (h *handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 
 	json.Write(w, http.StatusOK, updatedCategory)
 }
+
+func (h *handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		log.Printf("Error parsing category ID: %v", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid category ID")
+		return
+	}
+
+	if err := h.service.DeleteCategory(r.Context(), id); err != nil {
+		log.Printf("Error deleting category: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+}

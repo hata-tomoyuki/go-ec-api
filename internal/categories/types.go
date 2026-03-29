@@ -11,6 +11,7 @@ type Service interface {
 	FindCategoryById(ctx context.Context, id int64) (repo.Category, error)
 	CreateCategories(ctx context.Context, name string, description *string) (repo.Category, error)
 	UpdateCategories(ctx context.Context, id int64, name string, description *string) (repo.Category, error)
+	DeleteCategory(ctx context.Context, id int64) error
 }
 
 type createCategoryParams struct {

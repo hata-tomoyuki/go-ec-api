@@ -126,6 +126,25 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const deleteCategory = `-- name: DeleteCategory :one
+DELETE FROM categories
+WHERE id = $1
+RETURNING id, name, description, created_at, updated_at
+`
+
+func (q *Queries) DeleteCategory(ctx context.Context, id int64) (Category, error) {
+	row := q.db.QueryRow(ctx, deleteCategory, id)
+	var i Category
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const deleteProduct = `-- name: DeleteProduct :one
 DELETE FROM products
 WHERE id = $1

@@ -66,6 +66,7 @@ func (app *application) mount() http.Handler {
 
 			r.Post("/categories", categoryHandler.CreateCategories)
 			r.Put("/categories/{id}", categoryHandler.UpdateCategory)
+			r.Delete("/categories/{id}", categoryHandler.DeleteCategory)
 		})
 	})
 

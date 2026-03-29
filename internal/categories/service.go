@@ -53,3 +53,8 @@ func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, descr
 		Description: desc,
 	})
 }
+
+func (s *svc) DeleteCategory(ctx context.Context, id int64) error {
+	_, err := s.repo.DeleteCategory(ctx, id)
+	return err
+}

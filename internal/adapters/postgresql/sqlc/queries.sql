@@ -44,6 +44,11 @@ SET name = $2, description = $3, updated_at = now()
 WHERE id = $1
 RETURNING *;
 
+-- name: DeleteCategory :one
+DELETE FROM categories
+WHERE id = $1
+RETURNING *;
+
 -- name: CreateOrderItem :one
 INSERT INTO order_items (order_id, product_id, quantity, price_in_cents)
 VALUES ($1, $2, $3, $4) RETURNING *;
