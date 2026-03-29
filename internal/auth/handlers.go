@@ -52,7 +52,7 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := h.service.Login(r.Context(), tempUser)
+	tokens, err := h.service.Login(r.Context(), tempUser)
 	if err != nil {
 		log.Printf("Error logging in user: %v", err)
 		if errors.Is(err, ErrInvalidCredentials) {
@@ -63,7 +63,7 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.Write(w, http.StatusOK, map[string]string{"token": token})
+	json.Write(w, http.StatusOK, tokens)
 }
 
 func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
@@ -86,13 +86,41 @@ func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	expiredAt := time.Unix(int64(exp), 0)
-	if err := h.service.Logout(r.Context(), jti, expiredAt); err != nil {
+	var refreshTokenID int64
+	if rtidStr, ok := claims["rtid"].(string); ok {
+		refreshTokenID, _ = strconv.ParseInt(rtidStr, 10, 64)
+	}
+	if err := h.service.Logout(r.Context(), jti, expiredAt, refreshTokenID); err != nil {
 		log.Printf("Error logging out user: %v", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
 	json.Write(w, http.StatusOK, map[string]string{"message": "Logged out successfully"})
+}
+
+func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err := json.Read(r, &body); err != nil {
+		log.Println("Error reading request body:", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	tokens, err := h.service.Refresh(r.Context(), body.RefreshToken)
+	if err != nil {
+		if errors.Is(err, ErrInvalidRefreshToken) {
+			json.WriteError(w, http.StatusUnauthorized, "Invalid or expired refresh token")
+			return
+		}
+		log.Printf("Error refreshing token: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, tokens)
 }
 
 func (h *handler) GetMe(w http.ResponseWriter, r *http.Request) {

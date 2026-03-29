@@ -13,6 +13,7 @@ type Querier interface {
 	AddProductToCategory(ctx context.Context, arg AddProductToCategoryParams) error
 	CancelOrder(ctx context.Context, id int64) (Order, error)
 	ClearCart(ctx context.Context, userID int64) error
+	ConsumeRefreshToken(ctx context.Context, tokenHash string) (RefreshToken, error)
 	CreateCart(ctx context.Context, userID int64) (Cart, error)
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
 	CreateOrder(ctx context.Context, customerID int64) (Order, error)
@@ -21,11 +22,14 @@ type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteCategory(ctx context.Context, id int64) (Category, error)
 	DeleteProduct(ctx context.Context, id int64) (Product, error)
+	DeleteRefreshToken(ctx context.Context, id int64) error
+	DeleteRefreshTokensByUserId(ctx context.Context, userID int64) error
 	FindCategoryById(ctx context.Context, id int64) (Category, error)
 	FindOrderById(ctx context.Context, id int64) (FindOrderByIdRow, error)
 	FindProductById(ctx context.Context, id int64) (Product, error)
 	FindUserByEmail(ctx context.Context, email string) (User, error)
 	FindUserById(ctx context.Context, id int64) (User, error)
+	InsertRefreshToken(ctx context.Context, arg InsertRefreshTokenParams) (RefreshToken, error)
 	IsTokenRevoked(ctx context.Context, jti string) (bool, error)
 	ListAllOrders(ctx context.Context) ([]ListAllOrdersRow, error)
 	ListCartItemsByUserId(ctx context.Context, userID int64) ([]ListCartItemsByUserIdRow, error)

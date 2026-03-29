@@ -11,7 +11,10 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-var ErrInvalidCredentials = errors.New("invalid email or password")
+var (
+	ErrInvalidCredentials  = errors.New("invalid email or password")
+	ErrInvalidRefreshToken = errors.New("invalid refresh token")
+)
 
 type svc struct {
 	repo *repo.Queries
@@ -39,28 +42,76 @@ func (s *svc) RegisterUser(ctx context.Context, params registerParams) (repo.Use
 	})
 }
 
-func (s *svc) Login(ctx context.Context, params loginParams) (string, error) {
+const refreshTokenTTL = 30 * 24 * time.Hour
+
+func (s *svc) issueTokens(ctx context.Context, user repo.User) (LoginTokens, error) {
+	plain, err := newRefreshTokenPlaintext()
+	if err != nil {
+		return LoginTokens{}, err
+	}
+	row, err := s.repo.InsertRefreshToken(ctx, repo.InsertRefreshTokenParams{
+		UserID:    user.ID,
+		TokenHash: hashRefreshToken(plain),
+		ExpiresAt: pgtype.Timestamptz{
+			Time:  time.Now().Add(refreshTokenTTL),
+			Valid: true,
+		},
+	})
+	if err != nil {
+		return LoginTokens{}, err
+	}
+	access, err := generateJWT(s.ja, user.ID, user.Name, user.Email, string(user.Role), row.ID)
+	if err != nil {
+		_ = s.repo.DeleteRefreshToken(ctx, row.ID)
+		return LoginTokens{}, err
+	}
+	return LoginTokens{
+		AccessToken:  access,
+		RefreshToken: plain,
+		ExpiresIn:    int64(accessTokenTTL.Seconds()),
+	}, nil
+}
+
+func (s *svc) Login(ctx context.Context, params loginParams) (LoginTokens, error) {
 	user, err := s.repo.FindUserByEmail(ctx, params.Email)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return "", ErrInvalidCredentials
+			return LoginTokens{}, ErrInvalidCredentials
 		}
-		return "", err
+		return LoginTokens{}, err
 	}
 
 	if err := checkPasswordHash(params.Password, user.PasswordHash); err != nil {
-		return "", ErrInvalidCredentials
+		return LoginTokens{}, ErrInvalidCredentials
 	}
 
-	token, err := generateJWT(s.ja, user.ID, user.Name, user.Email, string(user.Role))
-	if err != nil {
-		return "", err
-	}
-
-	return token, nil
+	return s.issueTokens(ctx, user)
 }
 
-func (s *svc) Logout(ctx context.Context, jti string, expired_at time.Time) error {
+func (s *svc) Refresh(ctx context.Context, refreshTokenPlain string) (LoginTokens, error) {
+	if refreshTokenPlain == "" {
+		return LoginTokens{}, ErrInvalidRefreshToken
+	}
+	row, err := s.repo.ConsumeRefreshToken(ctx, hashRefreshToken(refreshTokenPlain))
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return LoginTokens{}, ErrInvalidRefreshToken
+		}
+		return LoginTokens{}, err
+	}
+	user, err := s.repo.FindUserById(ctx, row.UserID)
+	if err != nil {
+		return LoginTokens{}, err
+	}
+	return s.issueTokens(ctx, user)
+}
+
+func (s *svc) Logout(ctx context.Context, jti string, expired_at time.Time, refreshTokenID int64) error {
+	if refreshTokenID > 0 {
+		if err := s.repo.DeleteRefreshToken(ctx, refreshTokenID); err != nil {
+			return err
+		}
+	}
 	return s.repo.RevokeToken(ctx, repo.RevokeTokenParams{
 		Jti: jti,
 		ExpiredAt: pgtype.Timestamptz{
@@ -107,8 +158,15 @@ func (s *svc) UpdateUserPassword(ctx context.Context, userID int64, currentPassw
 		return repo.User{}, err
 	}
 
-	return s.repo.UpdateUserPassword(ctx, repo.UpdateUserPasswordParams{
+	updated, err := s.repo.UpdateUserPassword(ctx, repo.UpdateUserPasswordParams{
 		ID:           userID,
 		PasswordHash: hashedPassword,
 	})
+	if err != nil {
+		return repo.User{}, err
+	}
+	if err := s.repo.DeleteRefreshTokensByUserId(ctx, userID); err != nil {
+		return repo.User{}, err
+	}
+	return updated, nil
 }

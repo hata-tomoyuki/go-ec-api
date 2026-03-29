@@ -79,6 +79,25 @@ func (q *Queries) ClearCart(ctx context.Context, userID int64) error {
 	return err
 }
 
+const consumeRefreshToken = `-- name: ConsumeRefreshToken :one
+DELETE FROM refresh_tokens
+WHERE token_hash = $1 AND expires_at > now()
+RETURNING id, user_id, token_hash, expires_at, created_at
+`
+
+func (q *Queries) ConsumeRefreshToken(ctx context.Context, tokenHash string) (RefreshToken, error) {
+	row := q.db.QueryRow(ctx, consumeRefreshToken, tokenHash)
+	var i RefreshToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const createCart = `-- name: CreateCart :one
 INSERT INTO carts (user_id) VALUES ($1) RETURNING id, user_id, created_at, updated_at
 `
@@ -255,6 +274,24 @@ func (q *Queries) DeleteProduct(ctx context.Context, id int64) (Product, error) 
 	return i, err
 }
 
+const deleteRefreshToken = `-- name: DeleteRefreshToken :exec
+DELETE FROM refresh_tokens WHERE id = $1
+`
+
+func (q *Queries) DeleteRefreshToken(ctx context.Context, id int64) error {
+	_, err := q.db.Exec(ctx, deleteRefreshToken, id)
+	return err
+}
+
+const deleteRefreshTokensByUserId = `-- name: DeleteRefreshTokensByUserId :exec
+DELETE FROM refresh_tokens WHERE user_id = $1
+`
+
+func (q *Queries) DeleteRefreshTokensByUserId(ctx context.Context, userID int64) error {
+	_, err := q.db.Exec(ctx, deleteRefreshTokensByUserId, userID)
+	return err
+}
+
 const findCategoryById = `-- name: FindCategoryById :one
 SELECT id, name, description, created_at, updated_at FROM categories WHERE id = $1
 `
@@ -373,6 +410,29 @@ func (q *Queries) FindUserById(ctx context.Context, id int64) (User, error) {
 		&i.CreatedAt,
 		&i.Role,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const insertRefreshToken = `-- name: InsertRefreshToken :one
+INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3) RETURNING id, user_id, token_hash, expires_at, created_at
+`
+
+type InsertRefreshTokenParams struct {
+	UserID    int64              `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+}
+
+func (q *Queries) InsertRefreshToken(ctx context.Context, arg InsertRefreshTokenParams) (RefreshToken, error) {
+	row := q.db.QueryRow(ctx, insertRefreshToken, arg.UserID, arg.TokenHash, arg.ExpiresAt)
+	var i RefreshToken
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.TokenHash,
+		&i.ExpiresAt,
+		&i.CreatedAt,
 	)
 	return i, err
 }

@@ -149,6 +149,14 @@ type ProductCategory struct {
 	CategoryID int64 `json:"category_id"`
 }
 
+type RefreshToken struct {
+	ID        int64              `json:"id"`
+	UserID    int64              `json:"user_id"`
+	TokenHash string             `json:"token_hash"`
+	ExpiresAt pgtype.Timestamptz `json:"expires_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
 type RevokedToken struct {
 	Jti       string             `json:"jti"`
 	ExpiredAt pgtype.Timestamptz `json:"expired_at"`

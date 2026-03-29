@@ -45,6 +45,7 @@ func (app *application) mount() http.Handler {
 	authHandler := auth.NewHandler(authService)
 	r.Post("/auth/register", authHandler.RegisterUser)
 	r.Post("/auth/login", authHandler.Login)
+	r.Post("/auth/refresh", authHandler.Refresh)
 
 	orderService := orders.NewService(queries, app.db)
 	ordersHandler := orders.NewHandler(orderService)

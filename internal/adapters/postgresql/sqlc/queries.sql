@@ -162,6 +162,20 @@ INSERT INTO revoked_tokens (jti, expired_at) VALUES ($1, $2);
 -- name: IsTokenRevoked :one
 SELECT EXISTS (SELECT 1 FROM revoked_tokens WHERE jti = $1);
 
+-- name: InsertRefreshToken :one
+INSERT INTO refresh_tokens (user_id, token_hash, expires_at) VALUES ($1, $2, $3) RETURNING *;
+
+-- name: ConsumeRefreshToken :one
+DELETE FROM refresh_tokens
+WHERE token_hash = $1 AND expires_at > now()
+RETURNING *;
+
+-- name: DeleteRefreshToken :exec
+DELETE FROM refresh_tokens WHERE id = $1;
+
+-- name: DeleteRefreshTokensByUserId :exec
+DELETE FROM refresh_tokens WHERE user_id = $1;
+
 -- name: CreateCart :one
 INSERT INTO carts (user_id) VALUES ($1) RETURNING *;
 
