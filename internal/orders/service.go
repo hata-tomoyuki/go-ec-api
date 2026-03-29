@@ -100,3 +100,20 @@ func (s *svc) CancelOrder(ctx context.Context, orderID int64) (repo.FindOrderByI
 
 	return order, nil
 }
+
+func (s *svc) UpdateOrderStatus(ctx context.Context, orderID int64, status string) (repo.FindOrderByIdRow, error) {
+	_, err := s.repo.FindOrderById(ctx, orderID)
+	if err != nil {
+		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to find order: %w", err)
+	}
+
+	_, err = s.repo.UpdateOrderStatus(ctx, repo.UpdateOrderStatusParams{
+		ID:     orderID,
+		Status: repo.Status(status),
+	})
+	if err != nil {
+		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to update order status: %w", err)
+	}
+
+	return s.repo.FindOrderById(ctx, orderID)
+}

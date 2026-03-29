@@ -129,6 +129,12 @@ JOIN
 WHERE
     o.id = $1;
 
+-- name: UpdateOrderStatus :one
+UPDATE orders
+SET status = $2, updated_at = now()
+WHERE id = $1
+RETURNING *;
+
 -- name: CreateUser :one
 INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING *;
 

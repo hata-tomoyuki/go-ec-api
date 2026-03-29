@@ -161,3 +161,36 @@ func (h *handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
+	orderIDStr := chi.URLParam(r, "id")
+	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := json.Read(r, &req); err != nil {
+		log.Println("Error reading request body:", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	updatedOrder, err := h.service.UpdateOrderStatus(r.Context(), orderID, req.Status)
+	if err != nil {
+		log.Printf("Error updating order status: %v", err)
+
+		if err.Error() == "sql: no rows in result set" {
+			json.WriteError(w, http.StatusNotFound, "Order not found")
+			return
+		}
+
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, updatedOrder)
+}
