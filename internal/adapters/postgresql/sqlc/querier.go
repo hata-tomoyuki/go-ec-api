@@ -22,6 +22,7 @@ type Querier interface {
 	FindUserByEmail(ctx context.Context, email string) (User, error)
 	IsTokenRevoked(ctx context.Context, jti string) (bool, error)
 	ListCategories(ctx context.Context) ([]Category, error)
+	ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]ListOrdersByCustomerIDRow, error)
 	ListProducts(ctx context.Context) ([]Product, error)
 	ListProductsByCategory(ctx context.Context, categoryID int64) ([]Product, error)
 	RemoveProductFromCategory(ctx context.Context, arg RemoveProductFromCategoryParams) error

@@ -25,6 +25,11 @@ func NewService(repo *repo.Queries, db *pgx.Conn) Service {
 		db:   db,
 	}
 }
+
+func (s *svc) ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error) {
+	return s.repo.ListOrdersByCustomerID(ctx, customerID)
+}
+
 func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo.Order, error) {
 	if tempOrder.CustomerID == 0 {
 		return repo.Order{}, fmt.Errorf("customer ID is required")
