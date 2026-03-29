@@ -31,3 +31,7 @@ func (s *svc) AddItemToCart(ctx context.Context, cartID int64, productID int64, 
 
 	return item, nil
 }
+
+func (s *svc) ListCartItemsByUserId(ctx context.Context, userID int64) ([]repo.ListCartItemsByUserIdRow, error) {
+	return s.repo.ListCartItemsByUserId(ctx, userID)
+}

@@ -59,3 +59,28 @@ func (h *handler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 
 	json.Write(w, http.StatusOK, addedItem)
 }
+
+func (h *handler) ShowCartItems(w http.ResponseWriter, r *http.Request) {
+	_, claims, _ := jwtauth.FromContext(r.Context())
+
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	userID, err := strconv.ParseInt(sub, 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		return
+	}
+
+	items, err := h.service.ListCartItemsByUserId(r.Context(), userID)
+	if err != nil {
+		log.Printf("Error listing cart items: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, items)
+}

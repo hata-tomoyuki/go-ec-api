@@ -413,6 +413,60 @@ func (q *Queries) ListAllOrders(ctx context.Context) ([]ListAllOrdersRow, error)
 	return items, nil
 }
 
+const listCartItemsByUserId = `-- name: ListCartItemsByUserId :many
+SELECT
+    ci.id,
+    ci.cart_id,
+    ci.product_id,
+    ci.quantity,
+    p.name AS product_name,
+    p.price_in_cents AS product_price_in_cents
+FROM
+    carts c
+JOIN
+    cart_items ci ON ci.cart_id = c.id
+JOIN
+    products p ON ci.product_id = p.id
+WHERE
+    c.user_id = $1
+`
+
+type ListCartItemsByUserIdRow struct {
+	ID                  int64  `json:"id"`
+	CartID              int64  `json:"cart_id"`
+	ProductID           int64  `json:"product_id"`
+	Quantity            int32  `json:"quantity"`
+	ProductName         string `json:"product_name"`
+	ProductPriceInCents int32  `json:"product_price_in_cents"`
+}
+
+func (q *Queries) ListCartItemsByUserId(ctx context.Context, userID int64) ([]ListCartItemsByUserIdRow, error) {
+	rows, err := q.db.Query(ctx, listCartItemsByUserId, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListCartItemsByUserIdRow
+	for rows.Next() {
+		var i ListCartItemsByUserIdRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CartID,
+			&i.ProductID,
+			&i.Quantity,
+			&i.ProductName,
+			&i.ProductPriceInCents,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCategories = `-- name: ListCategories :many
 SELECT id, name, description, created_at, updated_at FROM categories
 `

@@ -152,3 +152,20 @@ INSERT INTO carts (user_id) VALUES ($1) RETURNING *;
 
 -- name: AddItemToCart :one
 INSERT INTO cart_items (cart_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING *;
+
+-- name: ListCartItemsByUserId :many
+SELECT
+    ci.id,
+    ci.cart_id,
+    ci.product_id,
+    ci.quantity,
+    p.name AS product_name,
+    p.price_in_cents AS product_price_in_cents
+FROM
+    carts c
+JOIN
+    cart_items ci ON ci.cart_id = c.id
+JOIN
+    products p ON ci.product_id = p.id
+WHERE
+    c.user_id = $1;

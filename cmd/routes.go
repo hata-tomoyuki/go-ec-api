@@ -6,6 +6,7 @@ import (
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 	"example.com/ecommerce/internal/auth"
+	"example.com/ecommerce/internal/carts"
 	"example.com/ecommerce/internal/categories"
 	"example.com/ecommerce/internal/orders"
 	"example.com/ecommerce/internal/products"
@@ -48,6 +49,9 @@ func (app *application) mount() http.Handler {
 	orderService := orders.NewService(queries, app.db)
 	ordersHandler := orders.NewHandler(orderService)
 
+	cartsService := carts.NewService(queries)
+	cartsHandler := carts.NewHandler(cartsService)
+
 	r.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(tokenAuth))
 		r.Use(auth.JWTAuthenticator(queries))
@@ -58,6 +62,11 @@ func (app *application) mount() http.Handler {
 		r.Get("/orders", ordersHandler.ListOrdersByCustomerID)
 		r.Get("/orders/{id}", ordersHandler.FindOrderById)
 		r.Put("/orders/{id}/cancel", ordersHandler.CancelOrder)
+
+		r.Post("/carts", cartsHandler.CreateCart)
+		r.Post("/carts/items", cartsHandler.AddItemToCart)
+		r.Get("/cart", cartsHandler.ShowCartItems)
+
 		r.Get("/users/me", authHandler.GetMe)
 
 		// 管理者のみ
