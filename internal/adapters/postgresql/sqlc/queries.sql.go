@@ -836,6 +836,46 @@ func (q *Queries) RevokeToken(ctx context.Context, arg RevokeTokenParams) error 
 	return err
 }
 
+const updateAddress = `-- name: UpdateAddress :one
+UPDATE addresses
+SET street = $2, city = $3, state = $4, zip_code = $5, country = $6, updated_at = now()
+WHERE user_id = $1
+RETURNING id, user_id, street, city, state, zip_code, country, created_at, updated_at
+`
+
+type UpdateAddressParams struct {
+	UserID  int64  `json:"user_id"`
+	Street  string `json:"street"`
+	City    string `json:"city"`
+	State   string `json:"state"`
+	ZipCode string `json:"zip_code"`
+	Country string `json:"country"`
+}
+
+func (q *Queries) UpdateAddress(ctx context.Context, arg UpdateAddressParams) (Address, error) {
+	row := q.db.QueryRow(ctx, updateAddress,
+		arg.UserID,
+		arg.Street,
+		arg.City,
+		arg.State,
+		arg.ZipCode,
+		arg.Country,
+	)
+	var i Address
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Street,
+		&i.City,
+		&i.State,
+		&i.ZipCode,
+		&i.Country,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateCartItemQuantity = `-- name: UpdateCartItemQuantity :one
 UPDATE cart_items
 SET quantity = $2

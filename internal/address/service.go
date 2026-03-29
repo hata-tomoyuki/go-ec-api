@@ -28,3 +28,14 @@ func (s *svc) CreateAddress(ctx context.Context, userId int64, tempAddress creat
 		Country: tempAddress.Country,
 	})
 }
+
+func (s *svc) UpdateAddress(ctx context.Context, userId int64, tempAddress createAddressParams) (repo.Address, error) {
+	return s.repo.UpdateAddress(ctx, repo.UpdateAddressParams{
+		UserID:  userId,
+		Street:  tempAddress.Street,
+		City:    tempAddress.City,
+		State:   tempAddress.State,
+		ZipCode: tempAddress.ZipCode,
+		Country: tempAddress.Country,
+	})
+}
