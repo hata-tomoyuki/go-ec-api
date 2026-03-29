@@ -52,7 +52,7 @@ func (s *svc) Login(ctx context.Context, params loginParams) (string, error) {
 		return "", ErrInvalidCredentials
 	}
 
-	token, err := generateJWT(s.ja, user.ID, user.Email, string(user.Role))
+	token, err := generateJWT(s.ja, user.ID, user.Name, user.Email, string(user.Role))
 	if err != nil {
 		return "", err
 	}
@@ -69,3 +69,4 @@ func (s *svc) Logout(ctx context.Context, jti string, expired_at time.Time) erro
 		},
 	})
 }
+

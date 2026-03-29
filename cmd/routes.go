@@ -48,6 +48,7 @@ func (app *application) mount() http.Handler {
 		// 認証済みユーザー全員
 		r.Post("/auth/logout", authHandler.Logout)
 		r.Post("/orders", ordersHandler.PlaceOrder)
+		r.Get("/users/me", authHandler.GetMe)
 
 		// 管理者のみ
 		r.Group(func(r chi.Router) {

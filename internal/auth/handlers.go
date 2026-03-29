@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"example.com/ecommerce/internal/json"
@@ -92,4 +93,31 @@ func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.Write(w, http.StatusOK, map[string]string{"message": "Logged out successfully"})
+}
+
+func (h *handler) GetMe(w http.ResponseWriter, r *http.Request) {
+	_, claims, _ := jwtauth.FromContext(r.Context())
+
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	userID, err := strconv.ParseInt(sub, 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	name, _ := claims["name"].(string)
+	email, _ := claims["email"].(string)
+	role, _ := claims["role"].(string)
+
+	json.Write(w, http.StatusOK, userResponse{
+		ID:    userID,
+		Name:  name,
+		Email: email,
+		Role:  role,
+	})
 }
