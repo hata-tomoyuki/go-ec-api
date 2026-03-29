@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"example.com/ecommerce/internal/auth"
 	"example.com/ecommerce/internal/json"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth/v5"
 )
 
 type handler struct {
@@ -19,17 +19,9 @@ func NewHandler(service Service) *handler {
 }
 
 func (h *handler) CreateCart(w http.ResponseWriter, r *http.Request) {
-	_, claims, _ := jwtauth.FromContext(r.Context())
-
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-
-	userID, err := strconv.ParseInt(sub, 10, 64)
+	userID, err := auth.UserID(r)
 	if err != nil {
-		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
 	}
 
@@ -62,17 +54,9 @@ func (h *handler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) ShowCartItems(w http.ResponseWriter, r *http.Request) {
-	_, claims, _ := jwtauth.FromContext(r.Context())
-
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-
-	userID, err := strconv.ParseInt(sub, 10, 64)
+	userID, err := auth.UserID(r)
 	if err != nil {
-		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
 	}
 
@@ -124,17 +108,9 @@ func (h *handler) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) ClearCart(w http.ResponseWriter, r *http.Request) {
-	_, claims, _ := jwtauth.FromContext(r.Context())
-
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-
-	userID, err := strconv.ParseInt(sub, 10, 64)
+	userID, err := auth.UserID(r)
 	if err != nil {
-		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
 	}
 

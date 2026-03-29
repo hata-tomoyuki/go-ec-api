@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"example.com/ecommerce/internal/auth"
 	"example.com/ecommerce/internal/json"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth/v5"
 )
 
 type handler struct {
@@ -19,18 +19,8 @@ func NewHandler(service Service) *handler {
 	return &handler{service: service}
 }
 
-// getUserID extracts the user ID from JWT claims.
-func getUserID(r *http.Request) (int64, error) {
-	_, claims, _ := jwtauth.FromContext(r.Context())
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		return 0, errors.New("invalid token claims")
-	}
-	return strconv.ParseInt(sub, 10, 64)
-}
-
 func (h *handler) ListAddresses(w http.ResponseWriter, r *http.Request) {
-	userID, err := getUserID(r)
+	userID, err := auth.UserID(r)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
@@ -47,7 +37,7 @@ func (h *handler) ListAddresses(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) FindAddressById(w http.ResponseWriter, r *http.Request) {
-	userID, err := getUserID(r)
+	userID, err := auth.UserID(r)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
@@ -77,7 +67,7 @@ func (h *handler) FindAddressById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) CreateAddress(w http.ResponseWriter, r *http.Request) {
-	userID, err := getUserID(r)
+	userID, err := auth.UserID(r)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
@@ -106,7 +96,7 @@ func (h *handler) CreateAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
-	userID, err := getUserID(r)
+	userID, err := auth.UserID(r)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
@@ -148,7 +138,7 @@ func (h *handler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
-	userID, err := getUserID(r)
+	userID, err := auth.UserID(r)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return

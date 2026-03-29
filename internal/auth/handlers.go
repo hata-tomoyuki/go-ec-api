@@ -4,11 +4,8 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"strconv"
-	"time"
 
 	"example.com/ecommerce/internal/json"
-	"github.com/go-chi/jwtauth/v5"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -68,30 +65,13 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
-	token, claims, err := jwtauth.FromContext(r.Context())
-	if err != nil || token == nil {
+	lc, err := GetLogoutClaims(r)
+	if err != nil {
 		json.WriteError(w, http.StatusUnauthorized, "Unauthorized")
 		return
 	}
 
-	jti, ok := claims["jti"].(string)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-
-	exp, ok := claims["exp"].(float64)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-
-	expiredAt := time.Unix(int64(exp), 0)
-	var refreshTokenID int64
-	if rtidStr, ok := claims["rtid"].(string); ok {
-		refreshTokenID, _ = strconv.ParseInt(rtidStr, 10, 64)
-	}
-	if err := h.service.Logout(r.Context(), jti, expiredAt, refreshTokenID); err != nil {
+	if err := h.service.Logout(r.Context(), lc.JTI, lc.ExpiredAt, lc.RefreshTokenID); err != nil {
 		log.Printf("Error logging out user: %v", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -125,15 +105,7 @@ func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) GetMe(w http.ResponseWriter, r *http.Request) {
-	_, claims, _ := jwtauth.FromContext(r.Context())
-
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-
-	userID, err := strconv.ParseInt(sub, 10, 64)
+	userID, err := UserID(r)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
@@ -159,15 +131,7 @@ func (h *handler) GetMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
-	_, claims, _ := jwtauth.FromContext(r.Context())
-
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-
-	userID, err := strconv.ParseInt(sub, 10, 64)
+	userID, err := UserID(r)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
@@ -196,15 +160,7 @@ func (h *handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
-	_, claims, _ := jwtauth.FromContext(r.Context())
-
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-
-	userID, err := strconv.ParseInt(sub, 10, 64)
+	userID, err := UserID(r)
 	if err != nil {
 		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return

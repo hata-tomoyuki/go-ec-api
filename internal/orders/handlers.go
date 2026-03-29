@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"example.com/ecommerce/internal/auth"
 	"example.com/ecommerce/internal/json"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/jwtauth/v5"
 )
 
 type handler struct {
@@ -21,17 +21,9 @@ func NewHandler(service Service) *handler {
 }
 
 func (h *handler) ListOrdersByCustomerID(w http.ResponseWriter, r *http.Request) {
-	_, claims, _ := jwtauth.FromContext(r.Context())
-
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-
-	customerID, err := strconv.ParseInt(sub, 10, 64)
+	customerID, err := auth.UserID(r)
 	if err != nil {
-		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
 	}
 
@@ -64,15 +56,9 @@ func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, claims, _ := jwtauth.FromContext(r.Context())
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-	customerID, err := strconv.ParseInt(sub, 10, 64)
+	customerID, err := auth.UserID(r)
 	if err != nil {
-		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
 	}
 
@@ -129,15 +115,9 @@ func (h *handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, claims, _ := jwtauth.FromContext(r.Context())
-	sub, ok := claims["sub"].(string)
-	if !ok {
-		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
-		return
-	}
-	customerID, err := strconv.ParseInt(sub, 10, 64)
+	customerID, err := auth.UserID(r)
 	if err != nil {
-		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
 		return
 	}
 
