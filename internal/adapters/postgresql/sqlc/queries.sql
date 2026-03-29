@@ -180,3 +180,7 @@ RETURNING *;
 DELETE FROM cart_items
 WHERE id = $1
 RETURNING *;
+
+-- name: ClearCart :exec
+DELETE FROM cart_items
+WHERE cart_id = (SELECT id FROM carts WHERE user_id = $1);

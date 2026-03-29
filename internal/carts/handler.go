@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"example.com/ecommerce/internal/json"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth/v5"
 )
 
@@ -120,4 +121,28 @@ func (h *handler) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.Write(w, http.StatusOK, removedItem)
+}
+
+func (h *handler) ClearCart(w http.ResponseWriter, r *http.Request) {
+	_, claims, _ := jwtauth.FromContext(r.Context())
+
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	userID, err := strconv.ParseInt(sub, 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		return
+	}
+
+	if err := h.service.ClearCart(r.Context(), userID); err != nil {
+		log.Printf("Error clearing cart: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, map[string]string{"message": "Cart cleared successfully"})
 }

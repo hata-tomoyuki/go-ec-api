@@ -46,3 +46,7 @@ func (s *svc) UpdateCartItemQuantity(ctx context.Context, productID int64, quant
 func (s *svc) RemoveItemFromCart(ctx context.Context, productID int64) (repo.CartItem, error) {
 	return s.repo.RemoveItemFromCart(ctx, productID)
 }
+
+func (s *svc) ClearCart(ctx context.Context, userID int64) error {
+	return s.repo.ClearCart(ctx, userID)
+}

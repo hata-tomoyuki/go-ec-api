@@ -68,6 +68,7 @@ func (app *application) mount() http.Handler {
 		r.Get("/cart", cartsHandler.ShowCartItems)
 		r.Put("/cart/items/{id}", cartsHandler.UpdateCartItemQuantity)
 		r.Delete("/cart/items/{id}", cartsHandler.RemoveItemFromCart)
+		r.Delete("/cart", cartsHandler.ClearCart)
 
 		r.Get("/users/me", authHandler.GetMe)
 

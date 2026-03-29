@@ -12,6 +12,7 @@ type Querier interface {
 	AddItemToCart(ctx context.Context, arg AddItemToCartParams) (CartItem, error)
 	AddProductToCategory(ctx context.Context, arg AddProductToCategoryParams) error
 	CancelOrder(ctx context.Context, id int64) (Order, error)
+	ClearCart(ctx context.Context, userID int64) error
 	CreateCart(ctx context.Context, userID int64) (Cart, error)
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
 	CreateOrder(ctx context.Context, customerID int64) (Order, error)

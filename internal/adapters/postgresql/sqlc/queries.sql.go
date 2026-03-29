@@ -69,6 +69,16 @@ func (q *Queries) CancelOrder(ctx context.Context, id int64) (Order, error) {
 	return i, err
 }
 
+const clearCart = `-- name: ClearCart :exec
+DELETE FROM cart_items
+WHERE cart_id = (SELECT id FROM carts WHERE user_id = $1)
+`
+
+func (q *Queries) ClearCart(ctx context.Context, userID int64) error {
+	_, err := q.db.Exec(ctx, clearCart, userID)
+	return err
+}
+
 const createCart = `-- name: CreateCart :one
 INSERT INTO carts (user_id) VALUES ($1) RETURNING id, user_id, created_at, updated_at
 `
