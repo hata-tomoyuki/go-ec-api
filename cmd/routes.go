@@ -38,20 +38,26 @@ func (app *application) mount() http.Handler {
 	r.Post("/auth/register", authHandler.RegisterUser)
 	r.Post("/auth/login", authHandler.Login)
 
+	orderService := orders.NewService(queries, app.db)
+	ordersHandler := orders.NewHandler(orderService)
+
 	r.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(tokenAuth))
 		r.Use(auth.JWTAuthenticator(queries))
 
+		// 認証済みユーザー全員
 		r.Post("/auth/logout", authHandler.Logout)
+		r.Post("/orders", ordersHandler.PlaceOrder)
 
-		r.Post("/products", productHandler.CreateProduct)
-		r.Put("/products/{id}", productHandler.UpdateProduct)
-		r.Delete("/products/{id}", productHandler.DeleteProduct)
+		// 管理者のみ
+		r.Group(func(r chi.Router) {
+			r.Use(auth.RequireAdmin)
+
+			r.Post("/products", productHandler.CreateProduct)
+			r.Put("/products/{id}", productHandler.UpdateProduct)
+			r.Delete("/products/{id}", productHandler.DeleteProduct)
+		})
 	})
-
-	orderService := orders.NewService(queries, app.db)
-	ordersHandler := orders.NewHandler(orderService)
-	r.Post("/orders", ordersHandler.PlaceOrder)
 
 	return r
 }
