@@ -169,3 +169,9 @@ JOIN
     products p ON ci.product_id = p.id
 WHERE
     c.user_id = $1;
+
+-- name: UpdateCartItemQuantity :one
+UPDATE cart_items
+SET quantity = $2
+WHERE id = $1
+RETURNING *;

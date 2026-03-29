@@ -84,3 +84,21 @@ func (h *handler) ShowCartItems(w http.ResponseWriter, r *http.Request) {
 
 	json.Write(w, http.StatusOK, items)
 }
+
+func (h *handler) UpdateCartItemQuantity(w http.ResponseWriter, r *http.Request) {
+	var params addItemToCartParams
+	if err := json.Read(r, &params); err != nil {
+		log.Printf("Error reading request body: %v", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	updatedItem, err := h.service.UpdateCartItemQuantity(r.Context(), params.ProductID, params.Quantity)
+	if err != nil {
+		log.Printf("Error updating cart item quantity: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, updatedItem)
+}

@@ -33,6 +33,7 @@ type Querier interface {
 	ListProductsByCategory(ctx context.Context, categoryID int64) ([]Product, error)
 	RemoveProductFromCategory(ctx context.Context, arg RemoveProductFromCategoryParams) error
 	RevokeToken(ctx context.Context, arg RevokeTokenParams) error
+	UpdateCartItemQuantity(ctx context.Context, arg UpdateCartItemQuantityParams) (CartItem, error)
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
 	UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) (Order, error)
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (Product, error)

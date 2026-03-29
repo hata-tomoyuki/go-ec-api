@@ -63,9 +63,10 @@ func (app *application) mount() http.Handler {
 		r.Get("/orders/{id}", ordersHandler.FindOrderById)
 		r.Put("/orders/{id}/cancel", ordersHandler.CancelOrder)
 
-		r.Post("/carts", cartsHandler.CreateCart)
-		r.Post("/carts/items", cartsHandler.AddItemToCart)
+		r.Post("/cart", cartsHandler.CreateCart)
+		r.Post("/cart/items", cartsHandler.AddItemToCart)
 		r.Get("/cart", cartsHandler.ShowCartItems)
+		r.Put("/cart/items/{id}", cartsHandler.UpdateCartItemQuantity)
 
 		r.Get("/users/me", authHandler.GetMe)
 

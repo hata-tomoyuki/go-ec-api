@@ -35,3 +35,10 @@ func (s *svc) AddItemToCart(ctx context.Context, cartID int64, productID int64, 
 func (s *svc) ListCartItemsByUserId(ctx context.Context, userID int64) ([]repo.ListCartItemsByUserIdRow, error) {
 	return s.repo.ListCartItemsByUserId(ctx, userID)
 }
+
+func (s *svc) UpdateCartItemQuantity(ctx context.Context, productID int64, quantity int) (repo.CartItem, error) {
+	return s.repo.UpdateCartItemQuantity(ctx, repo.UpdateCartItemQuantityParams{
+		ID:       productID,
+		Quantity: int32(quantity),
+	})
+}
