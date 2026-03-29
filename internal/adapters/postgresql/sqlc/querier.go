@@ -9,6 +9,7 @@ import (
 )
 
 type Querier interface {
+	AddProductToCategory(ctx context.Context, arg AddProductToCategoryParams) error
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
 	CreateOrder(ctx context.Context, customerID int64) (Order, error)
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
@@ -22,6 +23,7 @@ type Querier interface {
 	IsTokenRevoked(ctx context.Context, jti string) (bool, error)
 	ListCategories(ctx context.Context) ([]Category, error)
 	ListProducts(ctx context.Context) ([]Product, error)
+	RemoveProductFromCategory(ctx context.Context, arg RemoveProductFromCategoryParams) error
 	RevokeToken(ctx context.Context, arg RevokeTokenParams) error
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (Product, error)

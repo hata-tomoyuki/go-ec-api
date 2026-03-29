@@ -11,6 +11,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addProductToCategory = `-- name: AddProductToCategory :exec
+INSERT INTO product_categories (product_id, category_id) VALUES ($1, $2)
+`
+
+type AddProductToCategoryParams struct {
+	ProductID  int64 `json:"product_id"`
+	CategoryID int64 `json:"category_id"`
+}
+
+func (q *Queries) AddProductToCategory(ctx context.Context, arg AddProductToCategoryParams) error {
+	_, err := q.db.Exec(ctx, addProductToCategory, arg.ProductID, arg.CategoryID)
+	return err
+}
+
 const createCategory = `-- name: CreateCategory :one
 INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id, name, description, created_at, updated_at
 `
@@ -293,6 +307,21 @@ func (q *Queries) ListProducts(ctx context.Context) ([]Product, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+const removeProductFromCategory = `-- name: RemoveProductFromCategory :exec
+DELETE FROM product_categories
+WHERE product_id = $1 AND category_id = $2
+`
+
+type RemoveProductFromCategoryParams struct {
+	ProductID  int64 `json:"product_id"`
+	CategoryID int64 `json:"category_id"`
+}
+
+func (q *Queries) RemoveProductFromCategory(ctx context.Context, arg RemoveProductFromCategoryParams) error {
+	_, err := q.db.Exec(ctx, removeProductFromCategory, arg.ProductID, arg.CategoryID)
+	return err
 }
 
 const revokeToken = `-- name: RevokeToken :exec

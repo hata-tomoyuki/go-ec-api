@@ -49,6 +49,13 @@ DELETE FROM categories
 WHERE id = $1
 RETURNING *;
 
+-- name: AddProductToCategory :exec
+INSERT INTO product_categories (product_id, category_id) VALUES ($1, $2);
+
+-- name: RemoveProductFromCategory :exec
+DELETE FROM product_categories
+WHERE product_id = $1 AND category_id = $2;
+
 -- name: CreateOrderItem :one
 INSERT INTO order_items (order_id, product_id, quantity, price_in_cents)
 VALUES ($1, $2, $3, $4) RETURNING *;
