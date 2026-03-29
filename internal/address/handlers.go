@@ -102,3 +102,27 @@ func (h *handler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 
 	json.Write(w, http.StatusOK, updatedAddress)
 }
+
+func (h *handler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
+	_, claims, _ := jwtauth.FromContext(r.Context())
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	userID, err := strconv.ParseInt(sub, 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		return
+	}
+
+	deletedAddress, err := h.service.DeleteAddress(r.Context(), userID)
+	if err != nil {
+		log.Printf("Error deleting address: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, deletedAddress)
+}

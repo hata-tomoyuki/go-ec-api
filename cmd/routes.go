@@ -81,6 +81,8 @@ func (app *application) mount() http.Handler {
 
 		r.Get("/addresses", addressHandler.FindAddressByUserId)
 		r.Post("/addresses", addressHandler.CreateAddress)
+		r.Put("/addresses", addressHandler.UpdateAddress)
+		r.Delete("/addresses", addressHandler.DeleteAddress)
 
 		// 管理者のみ
 		r.Group(func(r chi.Router) {

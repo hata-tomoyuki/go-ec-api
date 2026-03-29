@@ -39,3 +39,7 @@ func (s *svc) UpdateAddress(ctx context.Context, userId int64, tempAddress creat
 		Country: tempAddress.Country,
 	})
 }
+
+func (s *svc) DeleteAddress(ctx context.Context, userId int64) (repo.Address, error) {
+	return s.repo.DeleteAddress(ctx, userId)
+}

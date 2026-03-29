@@ -228,3 +228,8 @@ UPDATE addresses
 SET street = $2, city = $3, state = $4, zip_code = $5, country = $6, updated_at = now()
 WHERE user_id = $1
 RETURNING *;
+
+-- name: DeleteAddress :one
+DELETE FROM addresses
+WHERE user_id = $1
+RETURNING *;

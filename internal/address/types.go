@@ -18,4 +18,5 @@ type Service interface {
 	FindAddressByUserId(ctx context.Context, userId int64) (repo.Address, error)
 	CreateAddress(ctx context.Context, userId int64, tempAddress createAddressParams) (repo.Address, error)
 	UpdateAddress(ctx context.Context, userId int64, tempAddress createAddressParams) (repo.Address, error)
+	DeleteAddress(ctx context.Context, userId int64) (repo.Address, error)
 }
