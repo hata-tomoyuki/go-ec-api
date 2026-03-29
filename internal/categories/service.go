@@ -33,3 +33,7 @@ func (s *svc) CreateCategories(ctx context.Context, name string, description *st
 		Description: desc,
 	})
 }
+
+func (s *svc) FindCategoryById(ctx context.Context, id int64) (repo.Category, error) {
+	return s.repo.FindCategoryById(ctx, id)
+}

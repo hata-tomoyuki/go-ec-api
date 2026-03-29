@@ -3,8 +3,10 @@ package categories
 import (
 	"log"
 	"net/http"
+	"strconv"
 
 	"example.com/ecommerce/internal/json"
+	"github.com/go-chi/chi/v5"
 )
 
 type handler struct {
@@ -42,4 +44,24 @@ func (h *handler) ListCategories(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.Write(w, http.StatusOK, categories)
+}
+
+func (h *handler) FindCategoryById(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		log.Printf("Error parsing category ID: %v", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid category ID")
+		return
+	}
+
+	category, err := h.service.FindCategoryById(r.Context(), id)
+
+	if err != nil {
+		log.Printf("Error finding category: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, category)
 }

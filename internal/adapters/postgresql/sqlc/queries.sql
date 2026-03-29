@@ -32,6 +32,9 @@ INSERT INTO orders (customer_id) VALUES ($1) RETURNING *;
 -- name: ListCategories :many
 SELECT * FROM categories;
 
+-- name: FindCategoryById :one
+SELECT * FROM categories WHERE id = $1;
+
 -- name: CreateCategory :one
 INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING *;
 

@@ -145,6 +145,23 @@ func (q *Queries) DeleteProduct(ctx context.Context, id int64) (Product, error) 
 	return i, err
 }
 
+const findCategoryById = `-- name: FindCategoryById :one
+SELECT id, name, description, created_at, updated_at FROM categories WHERE id = $1
+`
+
+func (q *Queries) FindCategoryById(ctx context.Context, id int64) (Category, error) {
+	row := q.db.QueryRow(ctx, findCategoryById, id)
+	var i Category
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const findProductById = `-- name: FindProductById :one
 SELECT
  id, name, price_in_cents, quantity, created_at
