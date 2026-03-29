@@ -7,6 +7,7 @@ import (
 )
 
 type Service interface {
+	ListCategories(ctx context.Context) ([]repo.Category, error)
 	CreateCategories(ctx context.Context, name string, description *string) (repo.Category, error)
 }
 

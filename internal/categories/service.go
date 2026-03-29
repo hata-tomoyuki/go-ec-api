@@ -15,6 +15,10 @@ func NewService(repo repo.Querier) Service {
 	return &svc{repo: repo}
 }
 
+func (s *svc) ListCategories(ctx context.Context) ([]repo.Category, error) {
+	return s.repo.ListCategories(ctx)
+}
+
 func (s *svc) CreateCategories(ctx context.Context, name string, description *string) (repo.Category, error) {
 	desc := pgtype.Text{Valid: false}
 	if description != nil {

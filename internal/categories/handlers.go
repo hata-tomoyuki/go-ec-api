@@ -32,3 +32,14 @@ func (h *handler) CreateCategories(w http.ResponseWriter, r *http.Request) {
 
 	json.Write(w, http.StatusCreated, createdCategory)
 }
+
+func (h *handler) ListCategories(w http.ResponseWriter, r *http.Request) {
+	categories, err := h.service.ListCategories(r.Context())
+	if err != nil {
+		log.Printf("Error listing categories: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, categories)
+}

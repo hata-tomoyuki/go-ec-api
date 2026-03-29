@@ -196,6 +196,36 @@ func (q *Queries) IsTokenRevoked(ctx context.Context, jti string) (bool, error) 
 	return exists, err
 }
 
+const listCategories = `-- name: ListCategories :many
+SELECT id, name, description, created_at, updated_at FROM categories
+`
+
+func (q *Queries) ListCategories(ctx context.Context) ([]Category, error) {
+	rows, err := q.db.Query(ctx, listCategories)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Category
+	for rows.Next() {
+		var i Category
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listProducts = `-- name: ListProducts :many
 SELECT
  id, name, price_in_cents, quantity, created_at

@@ -29,6 +29,9 @@ RETURNING *;
 -- name: CreateOrder :one
 INSERT INTO orders (customer_id) VALUES ($1) RETURNING *;
 
+-- name: ListCategories :many
+SELECT * FROM categories;
+
 -- name: CreateCategory :one
 INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING *;
 
