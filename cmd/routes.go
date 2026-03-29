@@ -6,6 +6,7 @@ import (
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 	"example.com/ecommerce/internal/auth"
+	"example.com/ecommerce/internal/categories"
 	"example.com/ecommerce/internal/orders"
 	"example.com/ecommerce/internal/products"
 	"github.com/go-chi/chi/v5"
@@ -33,6 +34,9 @@ func (app *application) mount() http.Handler {
 	r.Get("/products", productHandler.ListProduct)
 	r.Get("/products/{id}", productHandler.FindProductById)
 
+	categoryService := categories.NewService(queries)
+	categoryHandler := categories.NewHandler(categoryService)
+
 	authService := auth.NewService(queries, tokenAuth)
 	authHandler := auth.NewHandler(authService)
 	r.Post("/auth/register", authHandler.RegisterUser)
@@ -57,6 +61,8 @@ func (app *application) mount() http.Handler {
 			r.Post("/products", productHandler.CreateProduct)
 			r.Put("/products/{id}", productHandler.UpdateProduct)
 			r.Delete("/products/{id}", productHandler.DeleteProduct)
+
+			r.Post("/categories", categoryHandler.CreateCategories)
 		})
 	})
 

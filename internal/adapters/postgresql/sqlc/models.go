@@ -53,6 +53,14 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 	return string(ns.UserRole), nil
 }
 
+type Category struct {
+	ID          int64              `json:"id"`
+	Name        string             `json:"name"`
+	Description pgtype.Text        `json:"description"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Order struct {
 	ID         int64              `json:"id"`
 	CustomerID int64              `json:"customer_id"`
@@ -73,6 +81,11 @@ type Product struct {
 	PriceInCents int32              `json:"price_in_cents"`
 	Quantity     int32              `json:"quantity"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+}
+
+type ProductCategory struct {
+	ProductID  int64 `json:"product_id"`
+	CategoryID int64 `json:"category_id"`
 }
 
 type RevokedToken struct {

@@ -11,6 +11,28 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createCategory = `-- name: CreateCategory :one
+INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id, name, description, created_at, updated_at
+`
+
+type CreateCategoryParams struct {
+	Name        string      `json:"name"`
+	Description pgtype.Text `json:"description"`
+}
+
+func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error) {
+	row := q.db.QueryRow(ctx, createCategory, arg.Name, arg.Description)
+	var i Category
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createOrder = `-- name: CreateOrder :one
 INSERT INTO orders (customer_id) VALUES ($1) RETURNING id, customer_id, created_at
 `
