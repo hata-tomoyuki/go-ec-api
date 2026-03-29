@@ -2,7 +2,7 @@ package products
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -21,7 +21,7 @@ func NewHandler(service Service) *handler {
 func (h *handler) ListProduct(w http.ResponseWriter, r *http.Request) {
 	products, err := h.service.ListProducts(r.Context())
 	if err != nil {
-		log.Printf("Error listing products: %v", err)
+		slog.Error("failed to list products", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -33,7 +33,6 @@ func (h *handler) FindProductById(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing product ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
@@ -44,7 +43,7 @@ func (h *handler) FindProductById(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		log.Printf("Error finding product: %v", err)
+		slog.Error("failed to find product", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -55,14 +54,14 @@ func (h *handler) FindProductById(w http.ResponseWriter, r *http.Request) {
 func (h *handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var tempProduct createProductParams
 	if err := json.Read(r, &tempProduct); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	createdProduct, err := h.service.CreateProduct(r.Context(), tempProduct)
 	if err != nil {
-		log.Printf("Error creating product: %v", err)
+		slog.Error("failed to create product", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -74,14 +73,13 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing product ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
 
 	var tempProduct updateProductParams
 	if err := json.Read(r, &tempProduct); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -94,7 +92,7 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		log.Printf("Error updating product: %v", err)
+		slog.Error("failed to update product", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -106,7 +104,6 @@ func (h *handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing product ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
@@ -117,7 +114,7 @@ func (h *handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		log.Printf("Error deleting product: %v", err)
+		slog.Error("failed to delete product", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

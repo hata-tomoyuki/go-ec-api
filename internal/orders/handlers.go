@@ -2,7 +2,7 @@ package orders
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -30,7 +30,7 @@ func (h *handler) ListOrdersByCustomerID(w http.ResponseWriter, r *http.Request)
 
 	orders, err := h.service.ListOrdersByCustomerID(r.Context(), customerID)
 	if err != nil {
-		log.Printf("Error listing orders: %v", err)
+		slog.Error("failed to list orders", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -41,7 +41,7 @@ func (h *handler) ListOrdersByCustomerID(w http.ResponseWriter, r *http.Request)
 func (h *handler) ListAllOrders(w http.ResponseWriter, r *http.Request) {
 	orders, err := h.service.ListAllOrders(r.Context())
 	if err != nil {
-		log.Printf("Error listing all orders: %v", err)
+		slog.Error("failed to list all orders", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -68,7 +68,7 @@ func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		log.Printf("Error finding order: %v", err)
+		slog.Error("failed to find order", "error", err, "order_id", orderID)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -84,18 +84,18 @@ func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	var tempOrder createOrderParams
 	if err := json.Read(r, &tempOrder); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	createdOrder, err := h.service.PlaceOrder(r.Context(), tempOrder)
 	if err != nil {
-		log.Printf("Error placing order: %v", err)
 		if errors.Is(err, ErrorProductNotFound) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
+		slog.Error("failed to place order", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -124,7 +124,7 @@ func (h *handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, ErrOrderNotPending):
 			json.WriteError(w, http.StatusBadRequest, err.Error())
 		default:
-			log.Printf("Error canceling order: %v", err)
+			slog.Error("failed to cancel order", "error", err, "order_id", orderID)
 			json.WriteError(w, http.StatusInternalServerError, err.Error())
 		}
 		return
@@ -149,7 +149,7 @@ func (h *handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		Status string `json:"status"`
 	}
 	if err := json.Read(r, &req); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -160,7 +160,7 @@ func (h *handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		log.Printf("Error updating order status: %v", err)
+		slog.Error("failed to update order status", "error", err, "order_id", orderID)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

@@ -2,7 +2,7 @@ package auth
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"example.com/ecommerce/internal/json"
@@ -22,14 +22,14 @@ func NewHandler(service Service) *handler {
 func (h *handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	var tempUser registerParams
 	if err := json.Read(r, &tempUser); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	createdUser, err := h.service.RegisterUser(r.Context(), tempUser)
 	if err != nil {
-		log.Printf("Error registering user: %v", err)
+		slog.Error("failed to register user", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -45,18 +45,18 @@ func (h *handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 	var tempUser loginParams
 	if err := json.Read(r, &tempUser); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	tokens, err := h.service.Login(r.Context(), tempUser)
 	if err != nil {
-		log.Printf("Error logging in user: %v", err)
 		if errors.Is(err, ErrInvalidCredentials) {
 			json.WriteError(w, http.StatusUnauthorized, "Invalid email or password")
 			return
 		}
+		slog.Error("failed to login", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -72,7 +72,7 @@ func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.Logout(r.Context(), lc.JTI, lc.ExpiredAt, lc.RefreshTokenID); err != nil {
-		log.Printf("Error logging out user: %v", err)
+		slog.Error("failed to logout", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -85,7 +85,7 @@ func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
 		RefreshToken string `json:"refresh_token"`
 	}
 	if err := json.Read(r, &body); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -96,7 +96,7 @@ func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusUnauthorized, "Invalid or expired refresh token")
 			return
 		}
-		log.Printf("Error refreshing token: %v", err)
+		slog.Error("failed to refresh token", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -117,7 +117,7 @@ func (h *handler) GetMe(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, "User not found")
 			return
 		}
-		log.Printf("Error loading profile: %v", err)
+		slog.Error("failed to load profile", "error", err, "user_id", userID)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -139,14 +139,14 @@ func (h *handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 
 	var params updateUserParams
 	if err := json.Read(r, &params); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	updatedUser, err := h.service.UpdateUser(r.Context(), userID, params)
 	if err != nil {
-		log.Printf("Error updating user: %v", err)
+		slog.Error("failed to update user", "error", err, "user_id", userID)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -171,18 +171,18 @@ func (h *handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 		NewPassword     string `json:"new_password"`
 	}
 	if err := json.Read(r, &params); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	updatedUser, err := h.service.UpdateUserPassword(r.Context(), userID, params.CurrentPassword, params.NewPassword)
 	if err != nil {
-		log.Printf("Error updating user password: %v", err)
 		if errors.Is(err, ErrInvalidCredentials) {
 			json.WriteError(w, http.StatusUnauthorized, "Current password is incorrect")
 			return
 		}
+		slog.Error("failed to update password", "error", err, "user_id", userID)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

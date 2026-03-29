@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"time"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
@@ -78,7 +78,7 @@ func (s *svc) issueTokens(ctx context.Context, user repo.User) (LoginTokens, err
 	access, err := generateJWT(s.ja, user.ID, user.Name, user.Email, string(user.Role), row.ID)
 	if err != nil {
 		if delErr := s.repo.DeleteRefreshToken(ctx, row.ID); delErr != nil {
-			log.Printf("auth: rollback refresh row after JWT encode error: %v", delErr)
+			slog.Error("failed to rollback refresh row after JWT encode error", "error", delErr)
 		}
 		return LoginTokens{}, err
 	}

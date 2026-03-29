@@ -1,7 +1,7 @@
 package carts
 
 import (
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -27,7 +27,7 @@ func (h *handler) CreateCart(w http.ResponseWriter, r *http.Request) {
 
 	createdCart, err := h.service.CreateCart(r.Context(), userID)
 	if err != nil {
-		log.Printf("Error creating cart: %v", err)
+		slog.Error("failed to create cart", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -38,14 +38,14 @@ func (h *handler) CreateCart(w http.ResponseWriter, r *http.Request) {
 func (h *handler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	var params addItemToCartParams
 	if err := json.Read(r, &params); err != nil {
-		log.Printf("Error reading request body: %v", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	addedItem, err := h.service.AddItemToCart(r.Context(), params.CartID, params.ProductID, params.Quantity)
 	if err != nil {
-		log.Printf("Error adding item to cart: %v", err)
+		slog.Error("failed to add item to cart", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -62,7 +62,7 @@ func (h *handler) ShowCartItems(w http.ResponseWriter, r *http.Request) {
 
 	items, err := h.service.ListCartItemsByUserId(r.Context(), userID)
 	if err != nil {
-		log.Printf("Error listing cart items: %v", err)
+		slog.Error("failed to list cart items", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -73,14 +73,14 @@ func (h *handler) ShowCartItems(w http.ResponseWriter, r *http.Request) {
 func (h *handler) UpdateCartItemQuantity(w http.ResponseWriter, r *http.Request) {
 	var params addItemToCartParams
 	if err := json.Read(r, &params); err != nil {
-		log.Printf("Error reading request body: %v", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	updatedItem, err := h.service.UpdateCartItemQuantity(r.Context(), params.ProductID, params.Quantity)
 	if err != nil {
-		log.Printf("Error updating cart item quantity: %v", err)
+		slog.Error("failed to update cart item quantity", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -92,14 +92,13 @@ func (h *handler) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
 	productId := chi.URLParam(r, "id")
 	productID, err := strconv.ParseInt(productId, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing product ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
 
 	removedItem, err := h.service.RemoveItemFromCart(r.Context(), productID)
 	if err != nil {
-		log.Printf("Error removing item from cart: %v", err)
+		slog.Error("failed to remove item from cart", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -115,7 +114,7 @@ func (h *handler) ClearCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.ClearCart(r.Context(), userID); err != nil {
-		log.Printf("Error clearing cart: %v", err)
+		slog.Error("failed to clear cart", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

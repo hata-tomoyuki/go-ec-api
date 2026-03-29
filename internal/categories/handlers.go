@@ -2,7 +2,7 @@ package categories
 
 import (
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 
@@ -21,14 +21,14 @@ func NewHandler(service Service) *handler {
 func (h *handler) CreateCategories(w http.ResponseWriter, r *http.Request) {
 	var tempCategory createCategoryParams
 	if err := json.Read(r, &tempCategory); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	createdCategory, err := h.service.CreateCategories(r.Context(), tempCategory.Name, tempCategory.Description)
 	if err != nil {
-		log.Printf("Error creating category: %v", err)
+		slog.Error("failed to create category", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -39,7 +39,7 @@ func (h *handler) CreateCategories(w http.ResponseWriter, r *http.Request) {
 func (h *handler) ListCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.service.ListCategories(r.Context())
 	if err != nil {
-		log.Printf("Error listing categories: %v", err)
+		slog.Error("failed to list categories", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -51,7 +51,6 @@ func (h *handler) FindCategoryById(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing category ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
@@ -62,7 +61,7 @@ func (h *handler) FindCategoryById(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		log.Printf("Error finding category: %v", err)
+		slog.Error("failed to find category", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -74,14 +73,13 @@ func (h *handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing category ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
 	var tempCategory createCategoryParams
 	if err := json.Read(r, &tempCategory); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -92,7 +90,7 @@ func (h *handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		log.Printf("Error updating category: %v", err)
+		slog.Error("failed to update category", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -104,7 +102,6 @@ func (h *handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing category ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
@@ -114,7 +111,7 @@ func (h *handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		log.Printf("Error deleting category: %v", err)
+		slog.Error("failed to delete category", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -126,14 +123,13 @@ func (h *handler) ListProductsByCategory(w http.ResponseWriter, r *http.Request)
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing category ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
 
 	products, err := h.service.ListProductsByCategory(r.Context(), id)
 	if err != nil {
-		log.Printf("Error listing products by category: %v", err)
+		slog.Error("failed to list products by category", "error", err, "category_id", id)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -145,7 +141,6 @@ func (h *handler) AddProductToCategory(w http.ResponseWriter, r *http.Request) {
 	categoryIdStr := chi.URLParam(r, "id")
 	categoryId, err := strconv.ParseInt(categoryIdStr, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing category ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
@@ -155,13 +150,13 @@ func (h *handler) AddProductToCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.Read(r, &temp); err != nil {
-		log.Println("Error reading request body:", err)
+		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if err := h.service.AddProductToCategory(r.Context(), categoryId, temp.ProductID); err != nil {
-		log.Printf("Error adding product to category: %v", err)
+		slog.Error("failed to add product to category", "error", err, "category_id", categoryId, "product_id", temp.ProductID)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -173,7 +168,6 @@ func (h *handler) RemoveProductFromCategory(w http.ResponseWriter, r *http.Reque
 	categoryIdStr := chi.URLParam(r, "id")
 	categoryId, err := strconv.ParseInt(categoryIdStr, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing category ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid category ID")
 		return
 	}
@@ -181,13 +175,12 @@ func (h *handler) RemoveProductFromCategory(w http.ResponseWriter, r *http.Reque
 	productIdStr := chi.URLParam(r, "productId")
 	productId, err := strconv.ParseInt(productIdStr, 10, 64)
 	if err != nil {
-		log.Printf("Error parsing product ID: %v", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid product ID")
 		return
 	}
 
 	if err := h.service.RemoveProductFromCategory(r.Context(), categoryId, productId); err != nil {
-		log.Printf("Error removing product from category: %v", err)
+		slog.Error("failed to remove product from category", "error", err, "category_id", categoryId, "product_id", productId)
 		json.WriteError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
