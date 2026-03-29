@@ -146,3 +146,9 @@ INSERT INTO revoked_tokens (jti, expired_at) VALUES ($1, $2);
 
 -- name: IsTokenRevoked :one
 SELECT EXISTS (SELECT 1 FROM revoked_tokens WHERE jti = $1);
+
+-- name: CreateCart :one
+INSERT INTO carts (user_id) VALUES ($1) RETURNING *;
+
+-- name: AddItemToCart :one
+INSERT INTO cart_items (cart_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING *;

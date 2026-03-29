@@ -11,6 +11,30 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addItemToCart = `-- name: AddItemToCart :one
+INSERT INTO cart_items (cart_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING id, cart_id, product_id, quantity, created_at, updated_at
+`
+
+type AddItemToCartParams struct {
+	CartID    int64 `json:"cart_id"`
+	ProductID int64 `json:"product_id"`
+	Quantity  int32 `json:"quantity"`
+}
+
+func (q *Queries) AddItemToCart(ctx context.Context, arg AddItemToCartParams) (CartItem, error) {
+	row := q.db.QueryRow(ctx, addItemToCart, arg.CartID, arg.ProductID, arg.Quantity)
+	var i CartItem
+	err := row.Scan(
+		&i.ID,
+		&i.CartID,
+		&i.ProductID,
+		&i.Quantity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const addProductToCategory = `-- name: AddProductToCategory :exec
 INSERT INTO product_categories (product_id, category_id) VALUES ($1, $2)
 `
@@ -40,6 +64,22 @@ func (q *Queries) CancelOrder(ctx context.Context, id int64) (Order, error) {
 		&i.CustomerID,
 		&i.CreatedAt,
 		&i.Status,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const createCart = `-- name: CreateCart :one
+INSERT INTO carts (user_id) VALUES ($1) RETURNING id, user_id, created_at, updated_at
+`
+
+func (q *Queries) CreateCart(ctx context.Context, userID int64) (Cart, error) {
+	row := q.db.QueryRow(ctx, createCart, userID)
+	var i Cart
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
 	return i, err
