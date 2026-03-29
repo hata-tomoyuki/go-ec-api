@@ -10,6 +10,7 @@ import (
 
 type Querier interface {
 	AddProductToCategory(ctx context.Context, arg AddProductToCategoryParams) error
+	CancelOrder(ctx context.Context, id int64) (Order, error)
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
 	CreateOrder(ctx context.Context, customerID int64) (Order, error)
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)

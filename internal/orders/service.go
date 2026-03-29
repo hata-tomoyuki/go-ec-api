@@ -82,3 +82,21 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 
 	return order, nil
 }
+
+func (s *svc) CancelOrder(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
+	order, err := s.repo.FindOrderById(ctx, orderID)
+	if err != nil {
+		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to find order: %w", err)
+	}
+
+	if order.Status != "pending" {
+		return repo.FindOrderByIdRow{}, fmt.Errorf("only pending orders can be cancelled")
+	}
+
+	_, err = s.repo.CancelOrder(ctx, orderID)
+	if err != nil {
+		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to cancel order: %w", err)
+	}
+
+	return order, nil
+}

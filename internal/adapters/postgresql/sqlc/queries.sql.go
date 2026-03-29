@@ -25,6 +25,26 @@ func (q *Queries) AddProductToCategory(ctx context.Context, arg AddProductToCate
 	return err
 }
 
+const cancelOrder = `-- name: CancelOrder :one
+UPDATE orders
+SET status = 'cancelled', updated_at = now()
+WHERE id = $1
+RETURNING id, customer_id, created_at, status, updated_at
+`
+
+func (q *Queries) CancelOrder(ctx context.Context, id int64) (Order, error) {
+	row := q.db.QueryRow(ctx, cancelOrder, id)
+	var i Order
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.CreatedAt,
+		&i.Status,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createCategory = `-- name: CreateCategory :one
 INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id, name, description, created_at, updated_at
 `
@@ -48,13 +68,19 @@ func (q *Queries) CreateCategory(ctx context.Context, arg CreateCategoryParams) 
 }
 
 const createOrder = `-- name: CreateOrder :one
-INSERT INTO orders (customer_id) VALUES ($1) RETURNING id, customer_id, created_at
+INSERT INTO orders (customer_id) VALUES ($1) RETURNING id, customer_id, created_at, status, updated_at
 `
 
 func (q *Queries) CreateOrder(ctx context.Context, customerID int64) (Order, error) {
 	row := q.db.QueryRow(ctx, createOrder, customerID)
 	var i Order
-	err := row.Scan(&i.ID, &i.CustomerID, &i.CreatedAt)
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.CreatedAt,
+		&i.Status,
+		&i.UpdatedAt,
+	)
 	return i, err
 }
 
@@ -199,7 +225,9 @@ const findOrderById = `-- name: FindOrderById :one
 SELECT
     o.id,
     o.customer_id,
+    o.status,
     o.created_at,
+    o.updated_at,
     oi.product_id,
     oi.quantity,
     oi.price_in_cents
@@ -214,7 +242,9 @@ WHERE
 type FindOrderByIdRow struct {
 	ID           int64              `json:"id"`
 	CustomerID   int64              `json:"customer_id"`
+	Status       Status             `json:"status"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	ProductID    int64              `json:"product_id"`
 	Quantity     int32              `json:"quantity"`
 	PriceInCents int32              `json:"price_in_cents"`
@@ -226,7 +256,9 @@ func (q *Queries) FindOrderById(ctx context.Context, id int64) (FindOrderByIdRow
 	err := row.Scan(
 		&i.ID,
 		&i.CustomerID,
+		&i.Status,
 		&i.CreatedAt,
+		&i.UpdatedAt,
 		&i.ProductID,
 		&i.Quantity,
 		&i.PriceInCents,
@@ -289,7 +321,9 @@ const listAllOrders = `-- name: ListAllOrders :many
 SELECT
     o.id,
     o.customer_id,
+    o.status,
     o.created_at,
+    o.updated_at,
     oi.product_id,
     oi.quantity,
     oi.price_in_cents
@@ -302,7 +336,9 @@ JOIN
 type ListAllOrdersRow struct {
 	ID           int64              `json:"id"`
 	CustomerID   int64              `json:"customer_id"`
+	Status       Status             `json:"status"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	ProductID    int64              `json:"product_id"`
 	Quantity     int32              `json:"quantity"`
 	PriceInCents int32              `json:"price_in_cents"`
@@ -320,7 +356,9 @@ func (q *Queries) ListAllOrders(ctx context.Context) ([]ListAllOrdersRow, error)
 		if err := rows.Scan(
 			&i.ID,
 			&i.CustomerID,
+			&i.Status,
 			&i.CreatedAt,
+			&i.UpdatedAt,
 			&i.ProductID,
 			&i.Quantity,
 			&i.PriceInCents,
@@ -369,7 +407,9 @@ const listOrdersByCustomerID = `-- name: ListOrdersByCustomerID :many
 SELECT
     o.id,
     o.customer_id,
+    o.status,
     o.created_at,
+    o.updated_at,
     oi.product_id,
     oi.quantity,
     oi.price_in_cents
@@ -384,7 +424,9 @@ WHERE
 type ListOrdersByCustomerIDRow struct {
 	ID           int64              `json:"id"`
 	CustomerID   int64              `json:"customer_id"`
+	Status       Status             `json:"status"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 	ProductID    int64              `json:"product_id"`
 	Quantity     int32              `json:"quantity"`
 	PriceInCents int32              `json:"price_in_cents"`
@@ -402,7 +444,9 @@ func (q *Queries) ListOrdersByCustomerID(ctx context.Context, customerID int64) 
 		if err := rows.Scan(
 			&i.ID,
 			&i.CustomerID,
+			&i.Status,
 			&i.CreatedAt,
+			&i.UpdatedAt,
 			&i.ProductID,
 			&i.Quantity,
 			&i.PriceInCents,

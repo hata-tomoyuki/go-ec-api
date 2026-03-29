@@ -74,11 +74,19 @@ WHERE product_id = $1 AND category_id = $2;
 INSERT INTO order_items (order_id, product_id, quantity, price_in_cents)
 VALUES ($1, $2, $3, $4) RETURNING *;
 
+-- name: CancelOrder :one
+UPDATE orders
+SET status = 'cancelled', updated_at = now()
+WHERE id = $1
+RETURNING *;
+
 -- name: ListOrdersByCustomerID :many
 SELECT
     o.id,
     o.customer_id,
+    o.status,
     o.created_at,
+    o.updated_at,
     oi.product_id,
     oi.quantity,
     oi.price_in_cents
@@ -93,7 +101,9 @@ WHERE
 SELECT
     o.id,
     o.customer_id,
+    o.status,
     o.created_at,
+    o.updated_at,
     oi.product_id,
     oi.quantity,
     oi.price_in_cents
@@ -106,7 +116,9 @@ JOIN
 SELECT
     o.id,
     o.customer_id,
+    o.status,
     o.created_at,
+    o.updated_at,
     oi.product_id,
     oi.quantity,
     oi.price_in_cents

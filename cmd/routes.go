@@ -57,6 +57,7 @@ func (app *application) mount() http.Handler {
 		r.Post("/orders", ordersHandler.PlaceOrder)
 		r.Get("/orders", ordersHandler.ListOrdersByCustomerID)
 		r.Get("/orders/{id}", ordersHandler.FindOrderById)
+		r.Put("/orders/{id}/cancel", ordersHandler.CancelOrder)
 		r.Get("/users/me", authHandler.GetMe)
 
 		// 管理者のみ

@@ -120,3 +120,44 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 
 	json.Write(w, http.StatusCreated, createdOrder)
 }
+
+func (h *handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
+	orderIDStr := chi.URLParam(r, "id")
+	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+
+	_, claims, _ := jwtauth.FromContext(r.Context())
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+	customerID, err := strconv.ParseInt(sub, 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		return
+	}
+
+	order, err := h.service.CancelOrder(r.Context(), orderID)
+	if err != nil {
+		log.Printf("Error canceling order: %v", err)
+
+		if err.Error() == "sql: no rows in result set" {
+			json.WriteError(w, http.StatusNotFound, "Order not found")
+			return
+		}
+
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if order.CustomerID != customerID {
+		json.WriteError(w, http.StatusForbidden, "You do not have permission to cancel this order")
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
