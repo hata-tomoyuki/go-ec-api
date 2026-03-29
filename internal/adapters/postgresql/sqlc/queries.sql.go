@@ -290,6 +290,32 @@ func (q *Queries) RevokeToken(ctx context.Context, arg RevokeTokenParams) error 
 	return err
 }
 
+const updateCategory = `-- name: UpdateCategory :one
+UPDATE categories
+SET name = $2, description = $3, updated_at = now()
+WHERE id = $1
+RETURNING id, name, description, created_at, updated_at
+`
+
+type UpdateCategoryParams struct {
+	ID          int64       `json:"id"`
+	Name        string      `json:"name"`
+	Description pgtype.Text `json:"description"`
+}
+
+func (q *Queries) UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error) {
+	row := q.db.QueryRow(ctx, updateCategory, arg.ID, arg.Name, arg.Description)
+	var i Category
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const updateProduct = `-- name: UpdateProduct :one
 UPDATE products
 SET name = $2, price_in_cents = $3

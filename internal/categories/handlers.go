@@ -65,3 +65,29 @@ func (h *handler) FindCategoryById(w http.ResponseWriter, r *http.Request) {
 
 	json.Write(w, http.StatusOK, category)
 }
+
+func (h *handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		log.Printf("Error parsing category ID: %v", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid category ID")
+		return
+	}
+
+	var tempCategory createCategoryParams
+	if err := json.Read(r, &tempCategory); err != nil {
+		log.Println("Error reading request body:", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	updatedCategory, err := h.service.UpdateCategories(r.Context(), id, tempCategory.Name, tempCategory.Description)
+	if err != nil {
+		log.Printf("Error updating category: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, updatedCategory)
+}

@@ -37,3 +37,19 @@ func (s *svc) CreateCategories(ctx context.Context, name string, description *st
 func (s *svc) FindCategoryById(ctx context.Context, id int64) (repo.Category, error) {
 	return s.repo.FindCategoryById(ctx, id)
 }
+
+func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, description *string) (repo.Category, error) {
+	desc := pgtype.Text{Valid: false}
+	if description != nil {
+		desc = pgtype.Text{
+			String: *description,
+			Valid:  true,
+		}
+	}
+
+	return s.repo.UpdateCategory(ctx, repo.UpdateCategoryParams{
+		ID:          id,
+		Name:        name,
+		Description: desc,
+	})
+}
