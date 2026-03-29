@@ -285,6 +285,56 @@ func (q *Queries) IsTokenRevoked(ctx context.Context, jti string) (bool, error) 
 	return exists, err
 }
 
+const listAllOrders = `-- name: ListAllOrders :many
+SELECT
+    o.id,
+    o.customer_id,
+    o.created_at,
+    oi.product_id,
+    oi.quantity,
+    oi.price_in_cents
+FROM
+    orders o
+JOIN
+    order_items oi ON o.id = oi.order_id
+`
+
+type ListAllOrdersRow struct {
+	ID           int64              `json:"id"`
+	CustomerID   int64              `json:"customer_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ProductID    int64              `json:"product_id"`
+	Quantity     int32              `json:"quantity"`
+	PriceInCents int32              `json:"price_in_cents"`
+}
+
+func (q *Queries) ListAllOrders(ctx context.Context) ([]ListAllOrdersRow, error) {
+	rows, err := q.db.Query(ctx, listAllOrders)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListAllOrdersRow
+	for rows.Next() {
+		var i ListAllOrdersRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CustomerID,
+			&i.CreatedAt,
+			&i.ProductID,
+			&i.Quantity,
+			&i.PriceInCents,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCategories = `-- name: ListCategories :many
 SELECT id, name, description, created_at, updated_at FROM categories
 `

@@ -30,6 +30,10 @@ func (s *svc) ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]r
 	return s.repo.ListOrdersByCustomerID(ctx, customerID)
 }
 
+func (s *svc) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRow, error) {
+	return s.repo.ListAllOrders(ctx)
+}
+
 func (s *svc) FindOrderById(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
 	return s.repo.FindOrderById(ctx, orderID)
 }

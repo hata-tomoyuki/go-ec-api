@@ -45,6 +45,17 @@ func (h *handler) ListOrdersByCustomerID(w http.ResponseWriter, r *http.Request)
 	json.Write(w, http.StatusOK, orders)
 }
 
+func (h *handler) ListAllOrders(w http.ResponseWriter, r *http.Request) {
+	orders, err := h.service.ListAllOrders(r.Context())
+	if err != nil {
+		log.Printf("Error listing all orders: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, orders)
+}
+
 func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 	orderIDStr := chi.URLParam(r, "id")
 	orderID, err := strconv.ParseInt(orderIDStr, 10, 64)
