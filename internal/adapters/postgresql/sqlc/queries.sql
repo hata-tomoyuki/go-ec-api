@@ -49,6 +49,20 @@ DELETE FROM categories
 WHERE id = $1
 RETURNING *;
 
+-- name: ListProductsByCategory :many
+SELECT
+    p.id,
+    p.name,
+    p.price_in_cents,
+    p.quantity,
+    p.created_at
+FROM
+    products p
+JOIN
+    product_categories pc ON p.id = pc.product_id
+WHERE
+    pc.category_id = $1;
+
 -- name: AddProductToCategory :exec
 INSERT INTO product_categories (product_id, category_id) VALUES ($1, $2);
 

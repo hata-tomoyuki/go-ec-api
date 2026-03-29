@@ -108,6 +108,25 @@ func (h *handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *handler) ListProductsByCategory(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		log.Printf("Error parsing category ID: %v", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid category ID")
+		return
+	}
+
+	products, err := h.service.ListProductsByCategory(r.Context(), id)
+	if err != nil {
+		log.Printf("Error listing products by category: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, products)
+}
+
 func (h *handler) AddProductToCategory(w http.ResponseWriter, r *http.Request) {
 	categoryIdStr := chi.URLParam(r, "id")
 	categoryId, err := strconv.ParseInt(categoryIdStr, 10, 64)

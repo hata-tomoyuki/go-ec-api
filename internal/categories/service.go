@@ -58,6 +58,11 @@ func (s *svc) DeleteCategory(ctx context.Context, id int64) error {
 	_, err := s.repo.DeleteCategory(ctx, id)
 	return err
 }
+
+func (s *svc) ListProductsByCategory(ctx context.Context, categoryId int64) ([]repo.Product, error) {
+	return s.repo.ListProductsByCategory(ctx, categoryId)
+}
+
 func (s *svc) AddProductToCategory(ctx context.Context, categoryId int64, productId int64) error {
 	return s.repo.AddProductToCategory(ctx, repo.AddProductToCategoryParams{
 		ProductID:  productId,

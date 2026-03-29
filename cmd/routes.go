@@ -38,6 +38,7 @@ func (app *application) mount() http.Handler {
 	categoryHandler := categories.NewHandler(categoryService)
 	r.Get("/categories", categoryHandler.ListCategories)
 	r.Get("/categories/{id}", categoryHandler.FindCategoryById)
+	r.Get("/categories/{id}/products", categoryHandler.ListProductsByCategory)
 
 	authService := auth.NewService(queries, tokenAuth)
 	authHandler := auth.NewHandler(authService)

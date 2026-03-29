@@ -309,6 +309,47 @@ func (q *Queries) ListProducts(ctx context.Context) ([]Product, error) {
 	return items, nil
 }
 
+const listProductsByCategory = `-- name: ListProductsByCategory :many
+SELECT
+    p.id,
+    p.name,
+    p.price_in_cents,
+    p.quantity,
+    p.created_at
+FROM
+    products p
+JOIN
+    product_categories pc ON p.id = pc.product_id
+WHERE
+    pc.category_id = $1
+`
+
+func (q *Queries) ListProductsByCategory(ctx context.Context, categoryID int64) ([]Product, error) {
+	rows, err := q.db.Query(ctx, listProductsByCategory, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Product
+	for rows.Next() {
+		var i Product
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.PriceInCents,
+			&i.Quantity,
+			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const removeProductFromCategory = `-- name: RemoveProductFromCategory :exec
 DELETE FROM product_categories
 WHERE product_id = $1 AND category_id = $2

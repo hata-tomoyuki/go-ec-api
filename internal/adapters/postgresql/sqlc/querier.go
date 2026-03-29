@@ -23,6 +23,7 @@ type Querier interface {
 	IsTokenRevoked(ctx context.Context, jti string) (bool, error)
 	ListCategories(ctx context.Context) ([]Category, error)
 	ListProducts(ctx context.Context) ([]Product, error)
+	ListProductsByCategory(ctx context.Context, categoryID int64) ([]Product, error)
 	RemoveProductFromCategory(ctx context.Context, arg RemoveProductFromCategoryParams) error
 	RevokeToken(ctx context.Context, arg RevokeTokenParams) error
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
