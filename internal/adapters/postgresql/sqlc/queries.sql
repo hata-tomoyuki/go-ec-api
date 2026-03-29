@@ -175,3 +175,8 @@ UPDATE cart_items
 SET quantity = $2
 WHERE id = $1
 RETURNING *;
+
+-- name: RemoveItemFromCart :one
+DELETE FROM cart_items
+WHERE id = $1
+RETURNING *;

@@ -31,6 +31,7 @@ type Querier interface {
 	ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]ListOrdersByCustomerIDRow, error)
 	ListProducts(ctx context.Context) ([]Product, error)
 	ListProductsByCategory(ctx context.Context, categoryID int64) ([]Product, error)
+	RemoveItemFromCart(ctx context.Context, id int64) (CartItem, error)
 	RemoveProductFromCategory(ctx context.Context, arg RemoveProductFromCategoryParams) error
 	RevokeToken(ctx context.Context, arg RevokeTokenParams) error
 	UpdateCartItemQuantity(ctx context.Context, arg UpdateCartItemQuantityParams) (CartItem, error)

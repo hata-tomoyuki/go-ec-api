@@ -102,3 +102,22 @@ func (h *handler) UpdateCartItemQuantity(w http.ResponseWriter, r *http.Request)
 
 	json.Write(w, http.StatusOK, updatedItem)
 }
+
+func (h *handler) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
+	productId := chi.URLParam(r, "id")
+	productID, err := strconv.ParseInt(productId, 10, 64)
+	if err != nil {
+		log.Printf("Error parsing product ID: %v", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid product ID")
+		return
+	}
+
+	removedItem, err := h.service.RemoveItemFromCart(r.Context(), productID)
+	if err != nil {
+		log.Printf("Error removing item from cart: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, removedItem)
+}

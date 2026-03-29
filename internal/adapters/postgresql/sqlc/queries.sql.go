@@ -629,6 +629,26 @@ func (q *Queries) ListProductsByCategory(ctx context.Context, categoryID int64) 
 	return items, nil
 }
 
+const removeItemFromCart = `-- name: RemoveItemFromCart :one
+DELETE FROM cart_items
+WHERE id = $1
+RETURNING id, cart_id, product_id, quantity, created_at, updated_at
+`
+
+func (q *Queries) RemoveItemFromCart(ctx context.Context, id int64) (CartItem, error) {
+	row := q.db.QueryRow(ctx, removeItemFromCart, id)
+	var i CartItem
+	err := row.Scan(
+		&i.ID,
+		&i.CartID,
+		&i.ProductID,
+		&i.Quantity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const removeProductFromCategory = `-- name: RemoveProductFromCategory :exec
 DELETE FROM product_categories
 WHERE product_id = $1 AND category_id = $2
