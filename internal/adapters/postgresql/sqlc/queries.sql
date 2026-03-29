@@ -216,3 +216,6 @@ RETURNING *;
 -- name: ClearCart :exec
 DELETE FROM cart_items
 WHERE cart_id = (SELECT id FROM carts WHERE user_id = $1);
+
+-- name: CreateAddress :one
+INSERT INTO addresses (user_id, street, city, state, zip_code, country) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;

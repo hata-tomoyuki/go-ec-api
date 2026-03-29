@@ -96,6 +96,18 @@ func (ns NullUserRole) Value() (driver.Value, error) {
 	return string(ns.UserRole), nil
 }
 
+type Address struct {
+	ID        int32              `json:"id"`
+	UserID    int64              `json:"user_id"`
+	Street    string             `json:"street"`
+	City      string             `json:"city"`
+	State     string             `json:"state"`
+	ZipCode   string             `json:"zip_code"`
+	Country   string             `json:"country"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+}
+
 type Cart struct {
 	ID        int64              `json:"id"`
 	UserID    int64              `json:"user_id"`

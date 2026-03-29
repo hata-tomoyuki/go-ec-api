@@ -14,6 +14,7 @@ type Querier interface {
 	CancelOrder(ctx context.Context, id int64) (Order, error)
 	ClearCart(ctx context.Context, userID int64) error
 	ConsumeRefreshToken(ctx context.Context, tokenHash string) (RefreshToken, error)
+	CreateAddress(ctx context.Context, arg CreateAddressParams) (Address, error)
 	CreateCart(ctx context.Context, userID int64) (Cart, error)
 	CreateCategory(ctx context.Context, arg CreateCategoryParams) (Category, error)
 	CreateOrder(ctx context.Context, customerID int64) (Order, error)

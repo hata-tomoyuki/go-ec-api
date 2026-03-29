@@ -98,6 +98,43 @@ func (q *Queries) ConsumeRefreshToken(ctx context.Context, tokenHash string) (Re
 	return i, err
 }
 
+const createAddress = `-- name: CreateAddress :one
+INSERT INTO addresses (user_id, street, city, state, zip_code, country) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, user_id, street, city, state, zip_code, country, created_at, updated_at
+`
+
+type CreateAddressParams struct {
+	UserID  int64  `json:"user_id"`
+	Street  string `json:"street"`
+	City    string `json:"city"`
+	State   string `json:"state"`
+	ZipCode string `json:"zip_code"`
+	Country string `json:"country"`
+}
+
+func (q *Queries) CreateAddress(ctx context.Context, arg CreateAddressParams) (Address, error) {
+	row := q.db.QueryRow(ctx, createAddress,
+		arg.UserID,
+		arg.Street,
+		arg.City,
+		arg.State,
+		arg.ZipCode,
+		arg.Country,
+	)
+	var i Address
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Street,
+		&i.City,
+		&i.State,
+		&i.ZipCode,
+		&i.Country,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createCart = `-- name: CreateCart :one
 INSERT INTO carts (user_id) VALUES ($1) RETURNING id, user_id, created_at, updated_at
 `

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
+	"example.com/ecommerce/internal/address"
 	"example.com/ecommerce/internal/auth"
 	"example.com/ecommerce/internal/carts"
 	"example.com/ecommerce/internal/categories"
@@ -53,6 +54,9 @@ func (app *application) mount() http.Handler {
 	cartsService := carts.NewService(queries)
 	cartsHandler := carts.NewHandler(cartsService)
 
+	addressService := address.NewService(queries)
+	addressHandler := address.NewHandler(addressService)
+
 	r.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(tokenAuth))
 		r.Use(auth.JWTAuthenticator(queries))
@@ -74,6 +78,8 @@ func (app *application) mount() http.Handler {
 		r.Put("/cart/items/{id}", cartsHandler.UpdateCartItemQuantity)
 		r.Delete("/cart/items/{id}", cartsHandler.RemoveItemFromCart)
 		r.Delete("/cart", cartsHandler.ClearCart)
+
+		r.Post("/addresses", addressHandler.CreateAddress)
 
 		// 管理者のみ
 		r.Group(func(r chi.Router) {
