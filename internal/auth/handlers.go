@@ -39,6 +39,7 @@ func (h *handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		ID:    createdUser.ID,
 		Name:  createdUser.Name,
 		Email: createdUser.Email,
+		Role:  string(createdUser.Role),
 	})
 }
 

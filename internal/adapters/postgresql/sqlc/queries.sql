@@ -34,7 +34,7 @@ INSERT INTO order_items (order_id, product_id, quantity, price_in_cents)
 VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: CreateUser :one
-INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3) RETURNING *;
+INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: FindUserByEmail :one
 SELECT * FROM users WHERE email = $1;

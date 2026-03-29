@@ -39,3 +39,17 @@ func JWTAuthenticator(queries repo.Querier) func(http.Handler) http.Handler {
 		})
 	}
 }
+
+func RequireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, claims, _ := jwtauth.FromContext(r.Context())
+		role, _ := claims["role"].(string)
+		if role != "admin" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Forbidden"})
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}

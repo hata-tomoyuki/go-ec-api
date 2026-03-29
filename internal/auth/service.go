@@ -35,6 +35,7 @@ func (s *svc) RegisterUser(ctx context.Context, params registerParams) (repo.Use
 		Email:        params.Email,
 		PasswordHash: hashedPassword,
 		Name:         params.Name,
+		Role:         "user",
 	})
 }
 
@@ -51,7 +52,7 @@ func (s *svc) Login(ctx context.Context, params loginParams) (string, error) {
 		return "", ErrInvalidCredentials
 	}
 
-	token, err := generateJWT(s.ja, user.ID, user.Email)
+	token, err := generateJWT(s.ja, user.ID, user.Email, string(user.Role))
 	if err != nil {
 		return "", err
 	}
