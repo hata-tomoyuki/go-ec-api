@@ -176,6 +176,9 @@ DELETE FROM refresh_tokens WHERE id = $1;
 -- name: DeleteRefreshTokensByUserId :exec
 DELETE FROM refresh_tokens WHERE user_id = $1;
 
+-- name: DeleteExpiredRefreshTokens :exec
+DELETE FROM refresh_tokens WHERE expires_at < now();
+
 -- name: CreateCart :one
 INSERT INTO carts (user_id) VALUES ($1) RETURNING *;
 

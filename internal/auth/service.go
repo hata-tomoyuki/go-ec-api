@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"log"
 	"time"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
@@ -11,21 +12,31 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type pgBeginner interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+}
+
 var (
 	ErrInvalidCredentials  = errors.New("invalid email or password")
 	ErrInvalidRefreshToken = errors.New("invalid refresh token")
 )
 
 type svc struct {
+	db   pgBeginner
 	repo *repo.Queries
 	ja   *jwtauth.JWTAuth
 }
 
-func NewService(repo *repo.Queries, ja *jwtauth.JWTAuth) Service {
+func NewService(db pgBeginner, repo *repo.Queries, ja *jwtauth.JWTAuth) Service {
 	return &svc{
+		db:   db,
 		repo: repo,
 		ja:   ja,
 	}
+}
+
+func (s *svc) GetProfile(ctx context.Context, userID int64) (repo.User, error) {
+	return s.repo.FindUserById(ctx, userID)
 }
 
 func (s *svc) RegisterUser(ctx context.Context, params registerParams) (repo.User, error) {
@@ -45,6 +56,10 @@ func (s *svc) RegisterUser(ctx context.Context, params registerParams) (repo.Use
 const refreshTokenTTL = 30 * 24 * time.Hour
 
 func (s *svc) issueTokens(ctx context.Context, user repo.User) (LoginTokens, error) {
+	if err := s.repo.DeleteExpiredRefreshTokens(ctx); err != nil {
+		return LoginTokens{}, err
+	}
+
 	plain, err := newRefreshTokenPlaintext()
 	if err != nil {
 		return LoginTokens{}, err
@@ -62,7 +77,9 @@ func (s *svc) issueTokens(ctx context.Context, user repo.User) (LoginTokens, err
 	}
 	access, err := generateJWT(s.ja, user.ID, user.Name, user.Email, string(user.Role), row.ID)
 	if err != nil {
-		_ = s.repo.DeleteRefreshToken(ctx, row.ID)
+		if delErr := s.repo.DeleteRefreshToken(ctx, row.ID); delErr != nil {
+			log.Printf("auth: rollback refresh row after JWT encode error: %v", delErr)
+		}
 		return LoginTokens{}, err
 	}
 	return LoginTokens{
@@ -107,18 +124,29 @@ func (s *svc) Refresh(ctx context.Context, refreshTokenPlain string) (LoginToken
 }
 
 func (s *svc) Logout(ctx context.Context, jti string, expired_at time.Time, refreshTokenID int64) error {
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	qtx := s.repo.WithTx(tx)
+
 	if refreshTokenID > 0 {
-		if err := s.repo.DeleteRefreshToken(ctx, refreshTokenID); err != nil {
+		if err := qtx.DeleteRefreshToken(ctx, refreshTokenID); err != nil {
 			return err
 		}
 	}
-	return s.repo.RevokeToken(ctx, repo.RevokeTokenParams{
+	if err := qtx.RevokeToken(ctx, repo.RevokeTokenParams{
 		Jti: jti,
 		ExpiredAt: pgtype.Timestamptz{
 			Time:  expired_at,
 			Valid: true,
 		},
-	})
+	}); err != nil {
+		return err
+	}
+	return tx.Commit(ctx)
 }
 
 func (s *svc) UpdateUser(ctx context.Context, userID int64, params updateUserParams) (repo.User, error) {

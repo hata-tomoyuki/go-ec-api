@@ -21,6 +21,7 @@ type Querier interface {
 	CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteCategory(ctx context.Context, id int64) (Category, error)
+	DeleteExpiredRefreshTokens(ctx context.Context) error
 	DeleteProduct(ctx context.Context, id int64) (Product, error)
 	DeleteRefreshToken(ctx context.Context, id int64) error
 	DeleteRefreshTokensByUserId(ctx context.Context, userID int64) error

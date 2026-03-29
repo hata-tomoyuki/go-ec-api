@@ -41,7 +41,7 @@ func (app *application) mount() http.Handler {
 	r.Get("/categories/{id}", categoryHandler.FindCategoryById)
 	r.Get("/categories/{id}/products", categoryHandler.ListProductsByCategory)
 
-	authService := auth.NewService(queries, tokenAuth)
+	authService := auth.NewService(app.db, queries, tokenAuth)
 	authHandler := auth.NewHandler(authService)
 	r.Post("/auth/register", authHandler.RegisterUser)
 	r.Post("/auth/login", authHandler.Login)
@@ -74,8 +74,6 @@ func (app *application) mount() http.Handler {
 		r.Put("/cart/items/{id}", cartsHandler.UpdateCartItemQuantity)
 		r.Delete("/cart/items/{id}", cartsHandler.RemoveItemFromCart)
 		r.Delete("/cart", cartsHandler.ClearCart)
-
-		r.Get("/users/me", authHandler.GetMe)
 
 		// 管理者のみ
 		r.Group(func(r chi.Router) {

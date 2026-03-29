@@ -9,6 +9,7 @@ import (
 
 	"example.com/ecommerce/internal/json"
 	"github.com/go-chi/jwtauth/v5"
+	"github.com/jackc/pgx/v5"
 )
 
 type handler struct {
@@ -138,15 +139,22 @@ func (h *handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name, _ := claims["name"].(string)
-	email, _ := claims["email"].(string)
-	role, _ := claims["role"].(string)
+	user, err := h.service.GetProfile(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			json.WriteError(w, http.StatusNotFound, "User not found")
+			return
+		}
+		log.Printf("Error loading profile: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	json.Write(w, http.StatusOK, userResponse{
-		ID:    userID,
-		Name:  name,
-		Email: email,
-		Role:  role,
+		ID:    user.ID,
+		Name:  user.Name,
+		Email: user.Email,
+		Role:  string(user.Role),
 	})
 }
 
