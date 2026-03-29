@@ -18,6 +18,7 @@ type Querier interface {
 	DeleteCategory(ctx context.Context, id int64) (Category, error)
 	DeleteProduct(ctx context.Context, id int64) (Product, error)
 	FindCategoryById(ctx context.Context, id int64) (Category, error)
+	FindOrderById(ctx context.Context, id int64) (FindOrderByIdRow, error)
 	FindProductById(ctx context.Context, id int64) (Product, error)
 	FindUserByEmail(ctx context.Context, email string) (User, error)
 	IsTokenRevoked(ctx context.Context, jti string) (bool, error)

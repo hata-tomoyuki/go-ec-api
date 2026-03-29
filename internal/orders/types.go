@@ -18,5 +18,6 @@ type createOrderParams struct {
 
 type Service interface {
 	ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error)
+	FindOrderById(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error)
 	PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo.Order, error)
 }

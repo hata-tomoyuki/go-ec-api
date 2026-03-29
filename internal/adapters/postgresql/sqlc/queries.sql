@@ -89,6 +89,21 @@ JOIN
 WHERE
     o.customer_id = $1;
 
+-- name: FindOrderById :one
+SELECT
+    o.id,
+    o.customer_id,
+    o.created_at,
+    oi.product_id,
+    oi.quantity,
+    oi.price_in_cents
+FROM
+    orders o
+JOIN
+    order_items oi ON o.id = oi.order_id
+WHERE
+    o.id = $1;
+
 -- name: CreateUser :one
 INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING *;
 

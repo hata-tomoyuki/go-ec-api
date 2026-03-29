@@ -56,6 +56,7 @@ func (app *application) mount() http.Handler {
 		r.Post("/auth/logout", authHandler.Logout)
 		r.Post("/orders", ordersHandler.PlaceOrder)
 		r.Get("/orders", ordersHandler.ListOrdersByCustomerID)
+		r.Get("/orders/{id}", ordersHandler.FindOrderById)
 		r.Get("/users/me", authHandler.GetMe)
 
 		// 管理者のみ

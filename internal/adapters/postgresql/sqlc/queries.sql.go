@@ -195,6 +195,45 @@ func (q *Queries) FindCategoryById(ctx context.Context, id int64) (Category, err
 	return i, err
 }
 
+const findOrderById = `-- name: FindOrderById :one
+SELECT
+    o.id,
+    o.customer_id,
+    o.created_at,
+    oi.product_id,
+    oi.quantity,
+    oi.price_in_cents
+FROM
+    orders o
+JOIN
+    order_items oi ON o.id = oi.order_id
+WHERE
+    o.id = $1
+`
+
+type FindOrderByIdRow struct {
+	ID           int64              `json:"id"`
+	CustomerID   int64              `json:"customer_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	ProductID    int64              `json:"product_id"`
+	Quantity     int32              `json:"quantity"`
+	PriceInCents int32              `json:"price_in_cents"`
+}
+
+func (q *Queries) FindOrderById(ctx context.Context, id int64) (FindOrderByIdRow, error) {
+	row := q.db.QueryRow(ctx, findOrderById, id)
+	var i FindOrderByIdRow
+	err := row.Scan(
+		&i.ID,
+		&i.CustomerID,
+		&i.CreatedAt,
+		&i.ProductID,
+		&i.Quantity,
+		&i.PriceInCents,
+	)
+	return i, err
+}
+
 const findProductById = `-- name: FindProductById :one
 SELECT
  id, name, price_in_cents, quantity, created_at

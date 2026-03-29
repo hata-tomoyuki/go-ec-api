@@ -30,6 +30,10 @@ func (s *svc) ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]r
 	return s.repo.ListOrdersByCustomerID(ctx, customerID)
 }
 
+func (s *svc) FindOrderById(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
+	return s.repo.FindOrderById(ctx, orderID)
+}
+
 func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo.Order, error) {
 	if tempOrder.CustomerID == 0 {
 		return repo.Order{}, fmt.Errorf("customer ID is required")
