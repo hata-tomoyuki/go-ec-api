@@ -14,6 +14,10 @@ func NewService(repo repo.Querier) Service {
 	return &svc{repo: repo}
 }
 
+func (s *svc) FindAddressByUserId(ctx context.Context, userId int64) (repo.Address, error) {
+	return s.repo.FindAddressByUserId(ctx, userId)
+}
+
 func (s *svc) CreateAddress(ctx context.Context, userId int64, tempAddress createAddressParams) (repo.Address, error) {
 	return s.repo.CreateAddress(ctx, repo.CreateAddressParams{
 		UserID:  userId,

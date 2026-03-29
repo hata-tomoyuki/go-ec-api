@@ -15,5 +15,6 @@ type createAddressParams struct {
 }
 
 type Service interface {
+	FindAddressByUserId(ctx context.Context, userId int64) (repo.Address, error)
 	CreateAddress(ctx context.Context, userId int64, tempAddress createAddressParams) (repo.Address, error)
 }

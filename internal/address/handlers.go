@@ -17,6 +17,30 @@ func NewHandler(service Service) *handler {
 	return &handler{service: service}
 }
 
+func (h *handler) FindAddressByUserId(w http.ResponseWriter, r *http.Request) {
+	_, claims, _ := jwtauth.FromContext(r.Context())
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	userID, err := strconv.ParseInt(sub, 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid customer ID in token claims")
+		return
+	}
+
+	address, err := h.service.FindAddressByUserId(r.Context(), userID)
+	if err != nil {
+		log.Printf("Error finding address: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, address)
+}
+
 func (h *handler) CreateAddress(w http.ResponseWriter, r *http.Request) {
 	_, claims, _ := jwtauth.FromContext(r.Context())
 	sub, ok := claims["sub"].(string)

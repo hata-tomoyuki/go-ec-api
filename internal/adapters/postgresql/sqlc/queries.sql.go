@@ -338,6 +338,27 @@ func (q *Queries) DeleteRefreshTokensByUserId(ctx context.Context, userID int64)
 	return err
 }
 
+const findAddressByUserId = `-- name: FindAddressByUserId :one
+SELECT id, user_id, street, city, state, zip_code, country, created_at, updated_at FROM addresses WHERE user_id = $1
+`
+
+func (q *Queries) FindAddressByUserId(ctx context.Context, userID int64) (Address, error) {
+	row := q.db.QueryRow(ctx, findAddressByUserId, userID)
+	var i Address
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Street,
+		&i.City,
+		&i.State,
+		&i.ZipCode,
+		&i.Country,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const findCategoryById = `-- name: FindCategoryById :one
 SELECT id, name, description, created_at, updated_at FROM categories WHERE id = $1
 `

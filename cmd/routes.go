@@ -79,6 +79,7 @@ func (app *application) mount() http.Handler {
 		r.Delete("/cart/items/{id}", cartsHandler.RemoveItemFromCart)
 		r.Delete("/cart", cartsHandler.ClearCart)
 
+		r.Get("/addresses", addressHandler.FindAddressByUserId)
 		r.Post("/addresses", addressHandler.CreateAddress)
 
 		// 管理者のみ
