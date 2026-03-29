@@ -9,6 +9,12 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// pgBeginner はトランザクションを開始できる任意の接続型を抽象化する。
+// *pgx.Conn と *pgxpool.Pool の両方がこの interface を満たす。
+type pgBeginner interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+}
+
 var (
 	ErrorProductNotFound = errors.New("product not found")
 	ErrorProductNoStock  = errors.New("product out of stock")
@@ -16,10 +22,10 @@ var (
 
 type svc struct {
 	repo *repo.Queries
-	db   *pgx.Conn
+	db   pgBeginner
 }
 
-func NewService(repo *repo.Queries, db *pgx.Conn) Service {
+func NewService(repo *repo.Queries, db pgBeginner) Service {
 	return &svc{
 		repo: repo,
 		db:   db,

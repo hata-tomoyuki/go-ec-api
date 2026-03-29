@@ -7,7 +7,7 @@ import (
 
 	"example.com/ecommerce/internal/env"
 	"github.com/go-chi/jwtauth/v5"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var tokenAuth *jwtauth.JWTAuth
@@ -29,17 +29,17 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	conn, err := pgx.Connect(ctx, cfg.db.dsn)
+	pool, err := pgxpool.New(ctx, cfg.db.dsn)
 	if err != nil {
 		panic(err)
 	}
-	defer conn.Close(ctx)
+	defer pool.Close()
 
 	logger.Info("connected to database", "dsn", cfg.db.dsn)
 
 	api := application{
 		config: cfg,
-		db:     conn,
+		db:     pool,
 	}
 
 	if err := api.run(api.mount()); err != nil {
