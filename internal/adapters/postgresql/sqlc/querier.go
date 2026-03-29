@@ -25,6 +25,7 @@ type Querier interface {
 	FindOrderById(ctx context.Context, id int64) (FindOrderByIdRow, error)
 	FindProductById(ctx context.Context, id int64) (Product, error)
 	FindUserByEmail(ctx context.Context, email string) (User, error)
+	FindUserById(ctx context.Context, id int64) (User, error)
 	IsTokenRevoked(ctx context.Context, jti string) (bool, error)
 	ListAllOrders(ctx context.Context) ([]ListAllOrdersRow, error)
 	ListCartItemsByUserId(ctx context.Context, userID int64) ([]ListCartItemsByUserIdRow, error)
@@ -39,6 +40,7 @@ type Querier interface {
 	UpdateCategory(ctx context.Context, arg UpdateCategoryParams) (Category, error)
 	UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusParams) (Order, error)
 	UpdateProduct(ctx context.Context, arg UpdateProductParams) (Product, error)
+	UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error)
 }
 
 var _ Querier = (*Queries)(nil)

@@ -70,3 +70,24 @@ func (s *svc) Logout(ctx context.Context, jti string, expired_at time.Time) erro
 	})
 }
 
+func (s *svc) UpdateUser(ctx context.Context, userID int64, params updateUserParams) (repo.User, error) {
+	current, err := s.repo.FindUserById(ctx, userID)
+	if err != nil {
+		return repo.User{}, err
+	}
+
+	name := current.Name
+	if params.Name != nil {
+		name = *params.Name
+	}
+	email := current.Email
+	if params.Email != nil {
+		email = *params.Email
+	}
+
+	return s.repo.UpdateUser(ctx, repo.UpdateUserParams{
+		ID:    userID,
+		Name:  name,
+		Email: email,
+	})
+}

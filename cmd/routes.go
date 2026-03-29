@@ -58,6 +58,9 @@ func (app *application) mount() http.Handler {
 
 		// 認証済みユーザー全員
 		r.Post("/auth/logout", authHandler.Logout)
+		r.Get("/users/me", authHandler.GetMe)
+		r.Put("/users/me", authHandler.UpdateMe)
+
 		r.Post("/orders", ordersHandler.PlaceOrder)
 		r.Get("/orders", ordersHandler.ListOrdersByCustomerID)
 		r.Get("/orders/{id}", ordersHandler.FindOrderById)

@@ -121,3 +121,40 @@ func (h *handler) GetMe(w http.ResponseWriter, r *http.Request) {
 		Role:  role,
 	})
 }
+
+func (h *handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
+	_, claims, _ := jwtauth.FromContext(r.Context())
+
+	sub, ok := claims["sub"].(string)
+	if !ok {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	userID, err := strconv.ParseInt(sub, 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
+	var params updateUserParams
+	if err := json.Read(r, &params); err != nil {
+		log.Println("Error reading request body:", err)
+		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	updatedUser, err := h.service.UpdateUser(r.Context(), userID, params)
+	if err != nil {
+		log.Printf("Error updating user: %v", err)
+		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	json.Write(w, http.StatusOK, userResponse{
+		ID:    updatedUser.ID,
+		Name:  updatedUser.Name,
+		Email: updatedUser.Email,
+		Role:  string(updatedUser.Role),
+	})
+}

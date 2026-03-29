@@ -25,8 +25,14 @@ type userResponse struct {
 	Role  string `json:"role"`
 }
 
+type updateUserParams struct {
+	Name  *string `json:"name,omitempty"`
+	Email *string `json:"email,omitempty"`
+}
+
 type Service interface {
 	RegisterUser(ctx context.Context, params registerParams) (repo.User, error)
 	Login(ctx context.Context, params loginParams) (string, error)
 	Logout(ctx context.Context, jti string, expired_at time.Time) error
+	UpdateUser(ctx context.Context, userID int64, params updateUserParams) (repo.User, error)
 }

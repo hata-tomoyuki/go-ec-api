@@ -161,4 +161,5 @@ type User struct {
 	PasswordHash string             `json:"password_hash"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	Role         UserRole           `json:"role"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
 }

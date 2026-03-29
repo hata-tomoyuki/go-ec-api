@@ -187,7 +187,7 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, password_hash, created_at, role
+INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, password_hash, created_at, role, updated_at
 `
 
 type CreateUserParams struct {
@@ -212,6 +212,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.Role,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -339,7 +340,7 @@ func (q *Queries) FindProductById(ctx context.Context, id int64) (Product, error
 }
 
 const findUserByEmail = `-- name: FindUserByEmail :one
-SELECT id, name, email, password_hash, created_at, role FROM users WHERE email = $1
+SELECT id, name, email, password_hash, created_at, role, updated_at FROM users WHERE email = $1
 `
 
 func (q *Queries) FindUserByEmail(ctx context.Context, email string) (User, error) {
@@ -352,6 +353,26 @@ func (q *Queries) FindUserByEmail(ctx context.Context, email string) (User, erro
 		&i.PasswordHash,
 		&i.CreatedAt,
 		&i.Role,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const findUserById = `-- name: FindUserById :one
+SELECT id, name, email, password_hash, created_at, role, updated_at FROM users WHERE id = $1
+`
+
+func (q *Queries) FindUserById(ctx context.Context, id int64) (User, error) {
+	row := q.db.QueryRow(ctx, findUserById, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.Role,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
@@ -787,6 +808,34 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		&i.PriceInCents,
 		&i.Quantity,
 		&i.CreatedAt,
+	)
+	return i, err
+}
+
+const updateUser = `-- name: UpdateUser :one
+UPDATE users
+SET name = $2, email = $3, updated_at = now()
+WHERE id = $1
+RETURNING id, name, email, password_hash, created_at, role, updated_at
+`
+
+type UpdateUserParams struct {
+	ID    int64  `json:"id"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+}
+
+func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, updateUser, arg.ID, arg.Name, arg.Email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.PasswordHash,
+		&i.CreatedAt,
+		&i.Role,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

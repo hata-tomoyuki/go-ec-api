@@ -141,6 +141,15 @@ INSERT INTO users (name, email, password_hash, role) VALUES ($1, $2, $3, $4) RET
 -- name: FindUserByEmail :one
 SELECT * FROM users WHERE email = $1;
 
+-- name: FindUserById :one
+SELECT * FROM users WHERE id = $1;
+
+-- name: UpdateUser :one
+UPDATE users
+SET name = $2, email = $3, updated_at = now()
+WHERE id = $1
+RETURNING *;
+
 -- name: RevokeToken :exec
 INSERT INTO revoked_tokens (jti, expired_at) VALUES ($1, $2);
 
