@@ -96,13 +96,17 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 	return order, nil
 }
 
-func (s *svc) CancelOrder(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
+func (s *svc) CancelOrder(ctx context.Context, orderID int64, customerID int64) (repo.FindOrderByIdRow, error) {
 	order, err := s.repo.FindOrderById(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return repo.FindOrderByIdRow{}, ErrOrderNotFound
 		}
 		return repo.FindOrderByIdRow{}, err
+	}
+
+	if order.CustomerID != customerID {
+		return repo.FindOrderByIdRow{}, ErrOrderForbidden
 	}
 
 	if order.Status != "pending" {

@@ -82,12 +82,22 @@ func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
+	customerID, err := auth.UserID(r)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid token claims")
+		return
+	}
+
 	var tempOrder createOrderParams
 	if err := json.Read(r, &tempOrder); err != nil {
 		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
+
+	// リクエストボディの customer_id は無視し、JWTから取得したIDで上書きする。
+	// これにより、認証済みユーザー以外の名義で注文が作られることを防ぐ。
+	tempOrder.CustomerID = customerID
 
 	createdOrder, err := h.service.PlaceOrder(r.Context(), tempOrder)
 	if err != nil {
@@ -116,22 +126,19 @@ func (h *handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err := h.service.CancelOrder(r.Context(), orderID)
+	_, err = h.service.CancelOrder(r.Context(), orderID, customerID)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrOrderNotFound):
 			json.WriteError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, ErrOrderForbidden):
+			json.WriteError(w, http.StatusForbidden, err.Error())
 		case errors.Is(err, ErrOrderNotPending):
 			json.WriteError(w, http.StatusBadRequest, err.Error())
 		default:
 			slog.Error("failed to cancel order", "error", err, "order_id", orderID)
 			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
-		return
-	}
-
-	if order.CustomerID != customerID {
-		json.WriteError(w, http.StatusForbidden, ErrOrderForbidden.Error())
 		return
 	}
 
