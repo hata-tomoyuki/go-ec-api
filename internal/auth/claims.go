@@ -48,7 +48,11 @@ func GetLogoutClaims(r *http.Request) (LogoutClaims, error) {
 
 	var refreshTokenID int64
 	if rtidStr, ok := claims["rtid"].(string); ok {
-		refreshTokenID, _ = strconv.ParseInt(rtidStr, 10, 64)
+		rtid, err := strconv.ParseInt(rtidStr, 10, 64)
+		if err != nil {
+			return LogoutClaims{}, ErrInvalidClaims
+		}
+		refreshTokenID = rtid
 	}
 
 	return LogoutClaims{
