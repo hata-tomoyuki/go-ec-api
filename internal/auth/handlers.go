@@ -77,7 +77,7 @@ func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.Write(w, http.StatusOK, map[string]string{"message": "Logged out successfully"})
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {

@@ -155,5 +155,5 @@ func (h *handler) ClearCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.Write(w, http.StatusOK, map[string]string{"message": "Cart cleared successfully"})
+	w.WriteHeader(http.StatusNoContent)
 }
