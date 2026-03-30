@@ -2,8 +2,10 @@ package carts
 
 import (
 	"context"
+	"errors"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
+	"github.com/jackc/pgx/v5"
 )
 
 type svc struct {
@@ -18,33 +20,75 @@ func (s *svc) CreateCart(ctx context.Context, userID int64) (repo.Cart, error) {
 	return s.repo.CreateCart(ctx, userID)
 }
 
-func (s *svc) AddItemToCart(ctx context.Context, cartID int64, productID int64, quantity int) (repo.CartItem, error) {
-	item, err := s.repo.AddItemToCart(ctx, repo.AddItemToCartParams{
-		CartID:    cartID,
-		ProductID: productID,
-		Quantity:  int32(quantity),
-	})
-
+func (s *svc) AddItemToCart(ctx context.Context, userID int64, productID int64, quantity int) (repo.CartItem, error) {
+	cart, err := s.repo.FindCartByUserId(ctx, userID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.CartItem{}, ErrCartNotFound
+		}
 		return repo.CartItem{}, err
 	}
 
-	return item, nil
+	return s.repo.AddItemToCart(ctx, repo.AddItemToCartParams{
+		CartID:    cart.ID,
+		ProductID: productID,
+		Quantity:  int32(quantity),
+	})
 }
 
 func (s *svc) ListCartItemsByUserId(ctx context.Context, userID int64) ([]repo.ListCartItemsByUserIdRow, error) {
 	return s.repo.ListCartItemsByUserId(ctx, userID)
 }
 
-func (s *svc) UpdateCartItemQuantity(ctx context.Context, productID int64, quantity int) (repo.CartItem, error) {
+func (s *svc) UpdateCartItemQuantity(ctx context.Context, userID int64, cartItemID int64, quantity int) (repo.CartItem, error) {
+	cartItem, err := s.repo.FindCartItemById(ctx, cartItemID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.CartItem{}, ErrCartNotFound
+		}
+		return repo.CartItem{}, err
+	}
+
+	cart, err := s.repo.FindCartByUserId(ctx, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.CartItem{}, ErrCartNotFound
+		}
+		return repo.CartItem{}, err
+	}
+
+	if cartItem.CartID != cart.ID {
+		return repo.CartItem{}, ErrCartForbidden
+	}
+
 	return s.repo.UpdateCartItemQuantity(ctx, repo.UpdateCartItemQuantityParams{
-		ID:       productID,
+		ID:       cartItemID,
 		Quantity: int32(quantity),
 	})
 }
 
-func (s *svc) RemoveItemFromCart(ctx context.Context, productID int64) (repo.CartItem, error) {
-	return s.repo.RemoveItemFromCart(ctx, productID)
+func (s *svc) RemoveItemFromCart(ctx context.Context, userID int64, cartItemID int64) (repo.CartItem, error) {
+	cartItem, err := s.repo.FindCartItemById(ctx, cartItemID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.CartItem{}, ErrCartNotFound
+		}
+		return repo.CartItem{}, err
+	}
+
+	cart, err := s.repo.FindCartByUserId(ctx, userID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.CartItem{}, ErrCartNotFound
+		}
+		return repo.CartItem{}, err
+	}
+
+	if cartItem.CartID != cart.ID {
+		return repo.CartItem{}, ErrCartForbidden
+	}
+
+	return s.repo.RemoveItemFromCart(ctx, cartItemID)
 }
 
 func (s *svc) ClearCart(ctx context.Context, userID int64) error {

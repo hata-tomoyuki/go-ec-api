@@ -28,6 +28,8 @@ type Querier interface {
 	DeleteRefreshToken(ctx context.Context, id int64) error
 	DeleteRefreshTokensByUserId(ctx context.Context, userID int64) error
 	FindAddressById(ctx context.Context, id int32) (Address, error)
+	FindCartByUserId(ctx context.Context, userID int64) (Cart, error)
+	FindCartItemById(ctx context.Context, id int64) (CartItem, error)
 	FindCategoryById(ctx context.Context, id int64) (Category, error)
 	FindOrderById(ctx context.Context, id int64) (FindOrderByIdRow, error)
 	FindProductById(ctx context.Context, id int64) (Product, error)

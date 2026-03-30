@@ -182,6 +182,12 @@ DELETE FROM refresh_tokens WHERE expires_at < now();
 -- name: CreateCart :one
 INSERT INTO carts (user_id) VALUES ($1) RETURNING *;
 
+-- name: FindCartByUserId :one
+SELECT * FROM carts WHERE user_id = $1;
+
+-- name: FindCartItemById :one
+SELECT * FROM cart_items WHERE id = $1;
+
 -- name: AddItemToCart :one
 INSERT INTO cart_items (cart_id, product_id, quantity) VALUES ($1, $2, $3) RETURNING *;
 

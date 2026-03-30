@@ -368,6 +368,40 @@ func (q *Queries) FindAddressById(ctx context.Context, id int32) (Address, error
 	return i, err
 }
 
+const findCartByUserId = `-- name: FindCartByUserId :one
+SELECT id, user_id, created_at, updated_at FROM carts WHERE user_id = $1
+`
+
+func (q *Queries) FindCartByUserId(ctx context.Context, userID int64) (Cart, error) {
+	row := q.db.QueryRow(ctx, findCartByUserId, userID)
+	var i Cart
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const findCartItemById = `-- name: FindCartItemById :one
+SELECT id, cart_id, product_id, quantity, created_at, updated_at FROM cart_items WHERE id = $1
+`
+
+func (q *Queries) FindCartItemById(ctx context.Context, id int64) (CartItem, error) {
+	row := q.db.QueryRow(ctx, findCartItemById, id)
+	var i CartItem
+	err := row.Scan(
+		&i.ID,
+		&i.CartID,
+		&i.ProductID,
+		&i.Quantity,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const findCategoryById = `-- name: FindCategoryById :one
 SELECT id, name, description, created_at, updated_at FROM categories WHERE id = $1
 `
