@@ -3,6 +3,7 @@ package address
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -284,5 +285,63 @@ func TestHandlerDeleteAddress_404(t *testing.T) {
 
 	if w.Code != http.StatusNotFound {
 		t.Fatalf("expected status 404, got %d", w.Code)
+	}
+}
+
+func TestHandlerDeleteAddress_403(t *testing.T) {
+	svc := &mockService{
+		deleteAddressFn: func(ctx context.Context, userId int64, addressId int32) error {
+			return ErrForbidden
+		},
+	}
+	h := NewHandler(svc)
+
+	r := newRequestWithJWT("DELETE", "/addresses/1", "", "10")
+	r = withChiURLParam(r, "id", "1")
+	w := httptest.NewRecorder()
+
+	h.DeleteAddress(w, r)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403, got %d", w.Code)
+	}
+}
+
+func TestHandlerUpdateAddress_403(t *testing.T) {
+	svc := &mockService{
+		updateAddressFn: func(ctx context.Context, userId int64, addressId int32, params createAddressParams) (repo.Address, error) {
+			return repo.Address{}, ErrForbidden
+		},
+	}
+	h := NewHandler(svc)
+
+	body := `{"street":"1-1 Test","city":"Tokyo","state":"Tokyo","zip_code":"100-0001","country":"Japan"}`
+	r := newRequestWithJWT("PUT", "/addresses/1", body, "10")
+	r = withChiURLParam(r, "id", "1")
+	w := httptest.NewRecorder()
+
+	h.UpdateAddress(w, r)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected status 403, got %d", w.Code)
+	}
+}
+
+func TestHandlerCreateAddress_500(t *testing.T) {
+	svc := &mockService{
+		createAddressFn: func(ctx context.Context, userId int64, params createAddressParams) (repo.Address, error) {
+			return repo.Address{}, errors.New("db error")
+		},
+	}
+	h := NewHandler(svc)
+
+	body := `{"street":"1-1 Test","city":"Tokyo","state":"Tokyo","zip_code":"100-0001","country":"Japan"}`
+	r := newRequestWithJWT("POST", "/addresses", body, "10")
+	w := httptest.NewRecorder()
+
+	h.CreateAddress(w, r)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("expected status 500, got %d", w.Code)
 	}
 }

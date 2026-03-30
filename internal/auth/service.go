@@ -22,16 +22,18 @@ var (
 )
 
 type svc struct {
-	db   pgBeginner
-	repo *repo.Queries
-	ja   *jwtauth.JWTAuth
+	db     pgBeginner
+	repo   repo.Querier
+	ja     *jwtauth.JWTAuth
+	newTxQ func(pgx.Tx) repo.Querier
 }
 
-func NewService(db pgBeginner, repo *repo.Queries, ja *jwtauth.JWTAuth) Service {
+func NewService(db pgBeginner, q repo.Querier, ja *jwtauth.JWTAuth) Service {
 	return &svc{
-		db:   db,
-		repo: repo,
-		ja:   ja,
+		db:     db,
+		repo:   q,
+		ja:     ja,
+		newTxQ: func(tx pgx.Tx) repo.Querier { return repo.New(tx) },
 	}
 }
 
@@ -130,7 +132,7 @@ func (s *svc) Logout(ctx context.Context, jti string, expired_at time.Time, refr
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	qtx := s.repo.WithTx(tx)
+	qtx := s.newTxQ(tx)
 
 	if refreshTokenID > 0 {
 		if err := qtx.DeleteRefreshToken(ctx, refreshTokenID); err != nil {
@@ -192,7 +194,7 @@ func (s *svc) UpdateUserPassword(ctx context.Context, userID int64, currentPassw
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	qtx := s.repo.WithTx(tx)
+	qtx := s.newTxQ(tx)
 
 	updated, err := qtx.UpdateUserPassword(ctx, repo.UpdateUserPasswordParams{
 		ID:           userID,

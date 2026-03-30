@@ -1,4 +1,4 @@
-package products
+package categories
 
 import (
 	"context"
@@ -7,37 +7,46 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-// mockQuerier は Querier interface の手動モック（products テスト用）
+// mockQuerier は Querier interface の手動モック（categories テスト用）
 type mockQuerier struct {
-	listProductsFn    func(ctx context.Context) ([]repo.Product, error)
-	findProductByIdFn func(ctx context.Context, id int64) (repo.Product, error)
-	createProductFn   func(ctx context.Context, arg repo.CreateProductParams) (repo.Product, error)
-	updateProductFn   func(ctx context.Context, arg repo.UpdateProductParams) (repo.Product, error)
-	deleteProductFn   func(ctx context.Context, id int64) (repo.Product, error)
+	findCategoryByIdFn          func(ctx context.Context, id int64) (repo.Category, error)
+	listCategoriesFn            func(ctx context.Context) ([]repo.Category, error)
+	createCategoryFn            func(ctx context.Context, arg repo.CreateCategoryParams) (repo.Category, error)
+	updateCategoryFn            func(ctx context.Context, arg repo.UpdateCategoryParams) (repo.Category, error)
+	deleteCategoryFn            func(ctx context.Context, id int64) (repo.Category, error)
+	listProductsByCategoryFn    func(ctx context.Context, categoryID int64) ([]repo.Product, error)
+	addProductToCategoryFn      func(ctx context.Context, arg repo.AddProductToCategoryParams) error
+	removeProductFromCategoryFn func(ctx context.Context, arg repo.RemoveProductFromCategoryParams) error
 }
 
-func (m *mockQuerier) ListProducts(ctx context.Context) ([]repo.Product, error) {
-	return m.listProductsFn(ctx)
+func (m *mockQuerier) FindCategoryById(ctx context.Context, id int64) (repo.Category, error) {
+	return m.findCategoryByIdFn(ctx, id)
 }
-func (m *mockQuerier) FindProductById(ctx context.Context, id int64) (repo.Product, error) {
-	return m.findProductByIdFn(ctx, id)
+func (m *mockQuerier) ListCategories(ctx context.Context) ([]repo.Category, error) {
+	return m.listCategoriesFn(ctx)
 }
-func (m *mockQuerier) CreateProduct(ctx context.Context, arg repo.CreateProductParams) (repo.Product, error) {
-	return m.createProductFn(ctx, arg)
+func (m *mockQuerier) CreateCategory(ctx context.Context, arg repo.CreateCategoryParams) (repo.Category, error) {
+	return m.createCategoryFn(ctx, arg)
 }
-func (m *mockQuerier) UpdateProduct(ctx context.Context, arg repo.UpdateProductParams) (repo.Product, error) {
-	return m.updateProductFn(ctx, arg)
+func (m *mockQuerier) UpdateCategory(ctx context.Context, arg repo.UpdateCategoryParams) (repo.Category, error) {
+	return m.updateCategoryFn(ctx, arg)
 }
-func (m *mockQuerier) DeleteProduct(ctx context.Context, id int64) (repo.Product, error) {
-	return m.deleteProductFn(ctx, id)
+func (m *mockQuerier) DeleteCategory(ctx context.Context, id int64) (repo.Category, error) {
+	return m.deleteCategoryFn(ctx, id)
 }
-
-// --- Querier interface を満たすためのスタブ ---
-
-func (m *mockQuerier) AddItemToCart(ctx context.Context, arg repo.AddItemToCartParams) (repo.CartItem, error) {
-	panic("not implemented")
+func (m *mockQuerier) ListProductsByCategory(ctx context.Context, categoryID int64) ([]repo.Product, error) {
+	return m.listProductsByCategoryFn(ctx, categoryID)
 }
 func (m *mockQuerier) AddProductToCategory(ctx context.Context, arg repo.AddProductToCategoryParams) error {
+	return m.addProductToCategoryFn(ctx, arg)
+}
+func (m *mockQuerier) RemoveProductFromCategory(ctx context.Context, arg repo.RemoveProductFromCategoryParams) error {
+	return m.removeProductFromCategoryFn(ctx, arg)
+}
+
+// --- 以下は Querier interface を満たすためのスタブ ---
+
+func (m *mockQuerier) AddItemToCart(ctx context.Context, arg repo.AddItemToCartParams) (repo.CartItem, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) CancelOrder(ctx context.Context, id int64) (repo.Order, error) {
@@ -55,13 +64,13 @@ func (m *mockQuerier) CreateAddress(ctx context.Context, arg repo.CreateAddressP
 func (m *mockQuerier) CreateCart(ctx context.Context, userID int64) (repo.Cart, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) CreateCategory(ctx context.Context, arg repo.CreateCategoryParams) (repo.Category, error) {
-	panic("not implemented")
-}
 func (m *mockQuerier) CreateOrder(ctx context.Context, customerID int64) (repo.Order, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) CreateOrderItem(ctx context.Context, arg repo.CreateOrderItemParams) (repo.OrderItem, error) {
+	panic("not implemented")
+}
+func (m *mockQuerier) CreateProduct(ctx context.Context, arg repo.CreateProductParams) (repo.Product, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) CreateUser(ctx context.Context, arg repo.CreateUserParams) (repo.User, error) {
@@ -70,10 +79,10 @@ func (m *mockQuerier) CreateUser(ctx context.Context, arg repo.CreateUserParams)
 func (m *mockQuerier) DeleteAddress(ctx context.Context, id int32) error {
 	panic("not implemented")
 }
-func (m *mockQuerier) DeleteCategory(ctx context.Context, id int64) (repo.Category, error) {
+func (m *mockQuerier) DeleteExpiredRefreshTokens(ctx context.Context) error {
 	panic("not implemented")
 }
-func (m *mockQuerier) DeleteExpiredRefreshTokens(ctx context.Context) error {
+func (m *mockQuerier) DeleteProduct(ctx context.Context, id int64) (repo.Product, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) DeleteRefreshToken(ctx context.Context, id int64) error {
@@ -85,10 +94,16 @@ func (m *mockQuerier) DeleteRefreshTokensByUserId(ctx context.Context, userID in
 func (m *mockQuerier) FindAddressById(ctx context.Context, id int32) (repo.Address, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) FindCategoryById(ctx context.Context, id int64) (repo.Category, error) {
+func (m *mockQuerier) FindCartByUserId(ctx context.Context, userID int64) (repo.Cart, error) {
+	panic("not implemented")
+}
+func (m *mockQuerier) FindCartItemById(ctx context.Context, id int64) (repo.CartItem, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
+	panic("not implemented")
+}
+func (m *mockQuerier) FindProductById(ctx context.Context, id int64) (repo.Product, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) FindUserByEmail(ctx context.Context, email string) (repo.User, error) {
@@ -112,25 +127,13 @@ func (m *mockQuerier) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRo
 func (m *mockQuerier) ListCartItemsByUserId(ctx context.Context, userID int64) ([]repo.ListCartItemsByUserIdRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) ListCategories(ctx context.Context) ([]repo.Category, error) {
-	panic("not implemented")
-}
 func (m *mockQuerier) ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) ListProductsByCategory(ctx context.Context, categoryID int64) ([]repo.Product, error) {
-	panic("not implemented")
-}
-func (m *mockQuerier) FindCartByUserId(ctx context.Context, userID int64) (repo.Cart, error) {
-	panic("not implemented")
-}
-func (m *mockQuerier) FindCartItemById(ctx context.Context, id int64) (repo.CartItem, error) {
+func (m *mockQuerier) ListProducts(ctx context.Context) ([]repo.Product, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) RemoveItemFromCart(ctx context.Context, id int64) (repo.CartItem, error) {
-	panic("not implemented")
-}
-func (m *mockQuerier) RemoveProductFromCategory(ctx context.Context, arg repo.RemoveProductFromCategoryParams) error {
 	panic("not implemented")
 }
 func (m *mockQuerier) RevokeToken(ctx context.Context, arg repo.RevokeTokenParams) error {
@@ -142,10 +145,10 @@ func (m *mockQuerier) UpdateAddress(ctx context.Context, arg repo.UpdateAddressP
 func (m *mockQuerier) UpdateCartItemQuantity(ctx context.Context, arg repo.UpdateCartItemQuantityParams) (repo.CartItem, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) UpdateCategory(ctx context.Context, arg repo.UpdateCategoryParams) (repo.Category, error) {
+func (m *mockQuerier) UpdateOrderStatus(ctx context.Context, arg repo.UpdateOrderStatusParams) (repo.Order, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) UpdateOrderStatus(ctx context.Context, arg repo.UpdateOrderStatusParams) (repo.Order, error) {
+func (m *mockQuerier) UpdateProduct(ctx context.Context, arg repo.UpdateProductParams) (repo.Product, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) UpdateUser(ctx context.Context, arg repo.UpdateUserParams) (repo.User, error) {
@@ -155,13 +158,13 @@ func (m *mockQuerier) UpdateUserPassword(ctx context.Context, arg repo.UpdateUse
 	panic("not implemented")
 }
 
-// テスト用ヘルパー
-func newTestProduct(id int64, name string, price int32) repo.Product {
-	return repo.Product{
-		ID:           id,
-		Name:         name,
-		PriceInCents: price,
-		Quantity:     10,
-		CreatedAt:    pgtype.Timestamptz{Valid: true},
+// テスト用のヘルパー: ダミーの Category を生成
+func newTestCategory(id int64, name string) repo.Category {
+	return repo.Category{
+		ID:          id,
+		Name:        name,
+		Description: pgtype.Text{Valid: false},
+		CreatedAt:   pgtype.Timestamptz{Valid: true},
+		UpdatedAt:   pgtype.Timestamptz{Valid: true},
 	}
 }

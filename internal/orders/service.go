@@ -14,34 +14,34 @@ var (
 	ErrorProductNoStock  = errors.New("product out of stock")
 )
 
-// pgBeginner はトランザクションを開始できる任意の接続型を抽象化する。
-// *pgx.Conn と *pgxpool.Pool の両方がこの interface を満たす。
 type pgBeginner interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 }
 
 type svc struct {
-	repo *repo.Queries
-	db   pgBeginner
+	q      repo.Querier
+	db     pgBeginner
+	newTxQ func(pgx.Tx) repo.Querier
 }
 
-func NewService(repo *repo.Queries, db pgBeginner) Service {
+func NewService(q repo.Querier, db pgBeginner) Service {
 	return &svc{
-		repo: repo,
-		db:   db,
+		q:      q,
+		db:     db,
+		newTxQ: func(tx pgx.Tx) repo.Querier { return repo.New(tx) },
 	}
 }
 
 func (s *svc) ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error) {
-	return s.repo.ListOrdersByCustomerID(ctx, customerID)
+	return s.q.ListOrdersByCustomerID(ctx, customerID)
 }
 
 func (s *svc) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRow, error) {
-	return s.repo.ListAllOrders(ctx)
+	return s.q.ListAllOrders(ctx)
 }
 
 func (s *svc) FindOrderById(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
-	order, err := s.repo.FindOrderById(ctx, orderID)
+	order, err := s.q.FindOrderById(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return repo.FindOrderByIdRow{}, ErrOrderNotFound
@@ -70,7 +70,7 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 		return repo.Order{}, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
-	qtx := s.repo.WithTx(tx)
+	qtx := s.newTxQ(tx)
 
 	order, err := qtx.CreateOrder(ctx, tempOrder.CustomerID)
 	if err != nil {
@@ -105,7 +105,7 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 }
 
 func (s *svc) CancelOrder(ctx context.Context, orderID int64, customerID int64) (repo.FindOrderByIdRow, error) {
-	order, err := s.repo.FindOrderById(ctx, orderID)
+	order, err := s.q.FindOrderById(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return repo.FindOrderByIdRow{}, ErrOrderNotFound
@@ -121,7 +121,7 @@ func (s *svc) CancelOrder(ctx context.Context, orderID int64, customerID int64) 
 		return repo.FindOrderByIdRow{}, ErrOrderNotPending
 	}
 
-	_, err = s.repo.CancelOrder(ctx, orderID)
+	_, err = s.q.CancelOrder(ctx, orderID)
 	if err != nil {
 		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to cancel order: %w", err)
 	}
@@ -142,7 +142,7 @@ func (s *svc) UpdateOrderStatus(ctx context.Context, orderID int64, status strin
 		return repo.FindOrderByIdRow{}, ErrInvalidStatus
 	}
 
-	_, err := s.repo.FindOrderById(ctx, orderID)
+	_, err := s.q.FindOrderById(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return repo.FindOrderByIdRow{}, ErrOrderNotFound
@@ -150,7 +150,7 @@ func (s *svc) UpdateOrderStatus(ctx context.Context, orderID int64, status strin
 		return repo.FindOrderByIdRow{}, err
 	}
 
-	_, err = s.repo.UpdateOrderStatus(ctx, repo.UpdateOrderStatusParams{
+	_, err = s.q.UpdateOrderStatus(ctx, repo.UpdateOrderStatusParams{
 		ID:     orderID,
 		Status: repo.Status(status),
 	})
@@ -158,5 +158,5 @@ func (s *svc) UpdateOrderStatus(ctx context.Context, orderID int64, status strin
 		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to update order status: %w", err)
 	}
 
-	return s.repo.FindOrderById(ctx, orderID)
+	return s.q.FindOrderById(ctx, orderID)
 }

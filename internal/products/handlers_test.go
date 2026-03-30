@@ -203,3 +203,64 @@ func TestHandlerDeleteProduct_400_InvalidID(t *testing.T) {
 		t.Fatalf("expected status 400, got %d", w.Code)
 	}
 }
+
+func TestHandlerCreateProduct_400_Validation_EmptyName(t *testing.T) {
+	h := NewHandler(&mockService{})
+
+	body := `{"name":"","price_in_cents":1500}`
+	r := httptest.NewRequest("POST", "/products", strings.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	h.CreateProduct(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestHandlerCreateProduct_400_Validation_NegativePrice(t *testing.T) {
+	h := NewHandler(&mockService{})
+
+	body := `{"name":"Hat","price_in_cents":-100}`
+	r := httptest.NewRequest("POST", "/products", strings.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	h.CreateProduct(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestHandlerCreateProduct_400_Validation_ZeroPrice(t *testing.T) {
+	h := NewHandler(&mockService{})
+
+	body := `{"name":"Hat","price_in_cents":0}`
+	r := httptest.NewRequest("POST", "/products", strings.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	h.CreateProduct(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestHandlerUpdateProduct_400_Validation(t *testing.T) {
+	h := NewHandler(&mockService{})
+
+	body := `{"name":"","price_in_cents":0}`
+	r := httptest.NewRequest("PUT", "/products/1", strings.NewReader(body))
+	r.Header.Set("Content-Type", "application/json")
+	r = withChiURLParam(r, "id", "1")
+	w := httptest.NewRecorder()
+
+	h.UpdateProduct(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}

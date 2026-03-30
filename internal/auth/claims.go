@@ -41,8 +41,13 @@ func GetLogoutClaims(r *http.Request) (LogoutClaims, error) {
 		return LogoutClaims{}, ErrInvalidClaims
 	}
 
-	exp, ok := claims["exp"].(float64)
-	if !ok {
+	var expiredAt time.Time
+	switch v := claims["exp"].(type) {
+	case float64:
+		expiredAt = time.Unix(int64(v), 0)
+	case time.Time:
+		expiredAt = v
+	default:
 		return LogoutClaims{}, ErrInvalidClaims
 	}
 
@@ -57,7 +62,7 @@ func GetLogoutClaims(r *http.Request) (LogoutClaims, error) {
 
 	return LogoutClaims{
 		JTI:            jti,
-		ExpiredAt:      time.Unix(int64(exp), 0),
+		ExpiredAt:      expiredAt,
 		RefreshTokenID: refreshTokenID,
 	}, nil
 }
