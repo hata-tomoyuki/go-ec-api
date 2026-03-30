@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# pre-push hook: push 前にユニットテストを実行する
+# 統合テスト（TestIntegration*）は CI で実行するためここではスキップ
+
+set -euo pipefail
+
+echo "🔍 Running unit tests before push..."
+
+cd "$(git rev-parse --show-toplevel)"
+
+if ! go test ./... -run 'Test[^I]' -timeout 60s -count=1; then
+  echo ""
+  echo "❌ Unit tests failed. Push aborted."
+  echo "   Fix the failing tests and try again."
+  exit 1
+fi
+
+echo "✅ All unit tests passed."
