@@ -11,6 +11,7 @@ var (
 	ErrOrderNotFound    = errors.New("order not found")
 	ErrOrderNotPending  = errors.New("only pending orders can be cancelled")
 	ErrOrderForbidden   = errors.New("you do not have permission to access this order")
+	ErrInvalidStatus    = errors.New("invalid status: must be one of pending, completed, cancelled")
 )
 
 type orderItem struct {

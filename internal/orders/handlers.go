@@ -163,12 +163,15 @@ func (h *handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 
 	updatedOrder, err := h.service.UpdateOrderStatus(r.Context(), orderID, req.Status)
 	if err != nil {
-		if errors.Is(err, ErrOrderNotFound) {
+		switch {
+		case errors.Is(err, ErrInvalidStatus):
+			json.WriteError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, ErrOrderNotFound):
 			json.WriteError(w, http.StatusNotFound, err.Error())
-			return
+		default:
+			slog.Error("failed to update order status", "error", err, "order_id", orderID)
+			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
-		slog.Error("failed to update order status", "error", err, "order_id", orderID)
-		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 

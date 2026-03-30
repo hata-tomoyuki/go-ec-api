@@ -121,7 +121,19 @@ func (s *svc) CancelOrder(ctx context.Context, orderID int64, customerID int64) 
 	return order, nil
 }
 
+func isValidStatus(status string) bool {
+	switch repo.Status(status) {
+	case repo.StatusPending, repo.StatusCompleted, repo.StatusCancelled:
+		return true
+	}
+	return false
+}
+
 func (s *svc) UpdateOrderStatus(ctx context.Context, orderID int64, status string) (repo.FindOrderByIdRow, error) {
+	if !isValidStatus(status) {
+		return repo.FindOrderByIdRow{}, ErrInvalidStatus
+	}
+
 	_, err := s.repo.FindOrderById(ctx, orderID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
