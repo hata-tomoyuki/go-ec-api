@@ -30,7 +30,7 @@ func (h *handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 	createdUser, err := h.service.RegisterUser(r.Context(), tempUser)
 	if err != nil {
 		slog.Error("failed to register user", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -57,7 +57,7 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.Error("failed to login", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -73,7 +73,7 @@ func (h *handler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.service.Logout(r.Context(), lc.JTI, lc.ExpiredAt, lc.RefreshTokenID); err != nil {
 		slog.Error("failed to logout", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -97,7 +97,7 @@ func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.Error("failed to refresh token", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -118,7 +118,7 @@ func (h *handler) GetMe(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.Error("failed to load profile", "error", err, "user_id", userID)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -147,7 +147,7 @@ func (h *handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 	updatedUser, err := h.service.UpdateUser(r.Context(), userID, params)
 	if err != nil {
 		slog.Error("failed to update user", "error", err, "user_id", userID)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -183,7 +183,7 @@ func (h *handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.Error("failed to update password", "error", err, "user_id", userID)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 

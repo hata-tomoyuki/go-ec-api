@@ -22,7 +22,7 @@ func (h *handler) ListProduct(w http.ResponseWriter, r *http.Request) {
 	products, err := h.service.ListProducts(r.Context())
 	if err != nil {
 		slog.Error("failed to list products", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -44,7 +44,7 @@ func (h *handler) FindProductById(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.Error("failed to find product", "error", err, "id", id)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -62,7 +62,7 @@ func (h *handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	createdProduct, err := h.service.CreateProduct(r.Context(), tempProduct)
 	if err != nil {
 		slog.Error("failed to create product", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -93,7 +93,7 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.Error("failed to update product", "error", err, "id", id)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -115,7 +115,7 @@ func (h *handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.Error("failed to delete product", "error", err, "id", id)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 

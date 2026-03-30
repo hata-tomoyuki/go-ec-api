@@ -31,7 +31,7 @@ func (h *handler) ListOrdersByCustomerID(w http.ResponseWriter, r *http.Request)
 	orders, err := h.service.ListOrdersByCustomerID(r.Context(), customerID)
 	if err != nil {
 		slog.Error("failed to list orders", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -42,7 +42,7 @@ func (h *handler) ListAllOrders(w http.ResponseWriter, r *http.Request) {
 	orders, err := h.service.ListAllOrders(r.Context())
 	if err != nil {
 		slog.Error("failed to list all orders", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -69,7 +69,7 @@ func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.Error("failed to find order", "error", err, "order_id", orderID)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -96,7 +96,7 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.Error("failed to place order", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -125,7 +125,7 @@ func (h *handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusBadRequest, err.Error())
 		default:
 			slog.Error("failed to cancel order", "error", err, "order_id", orderID)
-			json.WriteError(w, http.StatusInternalServerError, err.Error())
+			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
@@ -161,7 +161,7 @@ func (h *handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		slog.Error("failed to update order status", "error", err, "order_id", orderID)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 

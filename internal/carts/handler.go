@@ -28,7 +28,7 @@ func (h *handler) CreateCart(w http.ResponseWriter, r *http.Request) {
 	createdCart, err := h.service.CreateCart(r.Context(), userID)
 	if err != nil {
 		slog.Error("failed to create cart", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -46,7 +46,7 @@ func (h *handler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 	addedItem, err := h.service.AddItemToCart(r.Context(), params.CartID, params.ProductID, params.Quantity)
 	if err != nil {
 		slog.Error("failed to add item to cart", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -63,7 +63,7 @@ func (h *handler) ShowCartItems(w http.ResponseWriter, r *http.Request) {
 	items, err := h.service.ListCartItemsByUserId(r.Context(), userID)
 	if err != nil {
 		slog.Error("failed to list cart items", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -81,7 +81,7 @@ func (h *handler) UpdateCartItemQuantity(w http.ResponseWriter, r *http.Request)
 	updatedItem, err := h.service.UpdateCartItemQuantity(r.Context(), params.ProductID, params.Quantity)
 	if err != nil {
 		slog.Error("failed to update cart item quantity", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -99,7 +99,7 @@ func (h *handler) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
 	removedItem, err := h.service.RemoveItemFromCart(r.Context(), productID)
 	if err != nil {
 		slog.Error("failed to remove item from cart", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -115,7 +115,7 @@ func (h *handler) ClearCart(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.service.ClearCart(r.Context(), userID); err != nil {
 		slog.Error("failed to clear cart", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 

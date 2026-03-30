@@ -29,7 +29,7 @@ func (h *handler) ListAddresses(w http.ResponseWriter, r *http.Request) {
 	addresses, err := h.service.ListAddressesByUserId(r.Context(), userID)
 	if err != nil {
 		slog.Error("failed to list addresses", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -58,7 +58,7 @@ func (h *handler) FindAddressById(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusForbidden, err.Error())
 		default:
 			slog.Error("failed to find address", "error", err)
-			json.WriteError(w, http.StatusInternalServerError, err.Error())
+			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
@@ -88,7 +88,7 @@ func (h *handler) CreateAddress(w http.ResponseWriter, r *http.Request) {
 	createdAddress, err := h.service.CreateAddress(r.Context(), userID, params)
 	if err != nil {
 		slog.Error("failed to create address", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, err.Error())
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -129,7 +129,7 @@ func (h *handler) UpdateAddress(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusForbidden, err.Error())
 		default:
 			slog.Error("failed to update address", "error", err)
-			json.WriteError(w, http.StatusInternalServerError, err.Error())
+			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
@@ -159,7 +159,7 @@ func (h *handler) DeleteAddress(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusForbidden, err.Error())
 		default:
 			slog.Error("failed to delete address", "error", err)
-			json.WriteError(w, http.StatusInternalServerError, err.Error())
+			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
