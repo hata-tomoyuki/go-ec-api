@@ -91,7 +91,9 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 			return repo.Order{}, fmt.Errorf("failed to create order item: %w", err)
 		}
 	}
-	tx.Commit(ctx)
+	if err := tx.Commit(ctx); err != nil {
+		return repo.Order{}, fmt.Errorf("failed to commit transaction: %w", err)
+	}
 
 	return order, nil
 }
