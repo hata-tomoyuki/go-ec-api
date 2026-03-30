@@ -186,15 +186,29 @@ func (s *svc) UpdateUserPassword(ctx context.Context, userID int64, currentPassw
 		return repo.User{}, err
 	}
 
-	updated, err := s.repo.UpdateUserPassword(ctx, repo.UpdateUserPasswordParams{
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return repo.User{}, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	qtx := s.repo.WithTx(tx)
+
+	updated, err := qtx.UpdateUserPassword(ctx, repo.UpdateUserPasswordParams{
 		ID:           userID,
 		PasswordHash: hashedPassword,
 	})
 	if err != nil {
 		return repo.User{}, err
 	}
-	if err := s.repo.DeleteRefreshTokensByUserId(ctx, userID); err != nil {
+
+	if err := qtx.DeleteRefreshTokensByUserId(ctx, userID); err != nil {
 		return repo.User{}, err
 	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return repo.User{}, err
+	}
+
 	return updated, nil
 }
