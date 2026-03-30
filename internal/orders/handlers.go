@@ -101,12 +101,15 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 
 	createdOrder, err := h.service.PlaceOrder(r.Context(), tempOrder)
 	if err != nil {
-		if errors.Is(err, ErrorProductNotFound) {
+		switch {
+		case errors.Is(err, ErrOrderEmptyItems), errors.Is(err, ErrOrderItemValidation):
+			json.WriteError(w, http.StatusBadRequest, err.Error())
+		case errors.Is(err, ErrorProductNotFound):
 			json.WriteError(w, http.StatusNotFound, err.Error())
-			return
+		default:
+			slog.Error("failed to place order", "error", err)
+			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
-		slog.Error("failed to place order", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 

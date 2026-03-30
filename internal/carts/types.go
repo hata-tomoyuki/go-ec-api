@@ -26,7 +26,21 @@ type addItemToCartParams struct {
 	Quantity  int   `json:"quantity"`
 }
 
+func (p addItemToCartParams) validate() error {
+	if p.ProductID <= 0 || p.Quantity <= 0 {
+		return errors.New("product_id must be provided and quantity must be greater than 0")
+	}
+	return nil
+}
+
 type updateCartItemParams struct {
 	CartItemID int64 `json:"cart_item_id"`
 	Quantity   int   `json:"quantity"`
+}
+
+func (p updateCartItemParams) validate() error {
+	if p.CartItemID <= 0 || p.Quantity <= 0 {
+		return errors.New("cart_item_id must be provided and quantity must be greater than 0")
+	}
+	return nil
 }

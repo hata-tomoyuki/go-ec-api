@@ -8,15 +8,24 @@ import (
 )
 
 var (
-	ErrOrderNotFound    = errors.New("order not found")
-	ErrOrderNotPending  = errors.New("only pending orders can be cancelled")
-	ErrOrderForbidden   = errors.New("you do not have permission to access this order")
-	ErrInvalidStatus    = errors.New("invalid status: must be one of pending, completed, cancelled")
+	ErrOrderNotFound      = errors.New("order not found")
+	ErrOrderNotPending    = errors.New("only pending orders can be cancelled")
+	ErrOrderForbidden     = errors.New("you do not have permission to access this order")
+	ErrInvalidStatus      = errors.New("invalid status: must be one of pending, completed, cancelled")
+	ErrOrderItemValidation = errors.New("each item must have a valid product_id and quantity greater than 0")
+	ErrOrderEmptyItems    = errors.New("at least one order item is required")
 )
 
 type orderItem struct {
 	ProductID int64 `json:"product_id"`
 	Quantity  int32 `json:"quantity"`
+}
+
+func (i orderItem) validate() error {
+	if i.ProductID <= 0 || i.Quantity <= 0 {
+		return ErrOrderItemValidation
+	}
+	return nil
 }
 
 type createOrderParams struct {

@@ -7,7 +7,10 @@ import (
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 )
 
-var ErrCategoryNotFound = errors.New("category not found")
+var (
+	ErrCategoryNotFound   = errors.New("category not found")
+	ErrCategoryValidation = errors.New("name is required")
+)
 
 type Service interface {
 	ListCategories(ctx context.Context) ([]repo.Category, error)
@@ -23,4 +26,11 @@ type Service interface {
 type createCategoryParams struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
+}
+
+func (p createCategoryParams) validate() error {
+	if p.Name == "" {
+		return ErrCategoryValidation
+	}
+	return nil
 }

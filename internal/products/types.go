@@ -7,17 +7,34 @@ import (
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 )
 
-var ErrProductNotFound = errors.New("product not found")
+var (
+	ErrProductNotFound  = errors.New("product not found")
+	ErrProductValidation = errors.New("name is required and price_in_cents must be greater than 0")
+)
 
 type createProductParams struct {
 	Name         string `json:"name"`
 	PriceInCents int32  `json:"price_in_cents"`
 }
 
+func (p createProductParams) validate() error {
+	if p.Name == "" || p.PriceInCents <= 0 {
+		return ErrProductValidation
+	}
+	return nil
+}
+
 type updateProductParams struct {
 	ID           int64  `json:"id"`
 	Name         string `json:"name"`
 	PriceInCents int32  `json:"price_in_cents"`
+}
+
+func (p updateProductParams) validate() error {
+	if p.Name == "" || p.PriceInCents <= 0 {
+		return ErrProductValidation
+	}
+	return nil
 }
 
 type Service interface {

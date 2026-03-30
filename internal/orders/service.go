@@ -56,7 +56,13 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 		return repo.Order{}, fmt.Errorf("customer ID is required")
 	}
 	if len(tempOrder.Items) == 0 {
-		return repo.Order{}, fmt.Errorf("at least one order item is required")
+		return repo.Order{}, ErrOrderEmptyItems
+	}
+
+	for _, item := range tempOrder.Items {
+		if err := item.validate(); err != nil {
+			return repo.Order{}, err
+		}
 	}
 
 	tx, err := s.db.Begin(ctx)

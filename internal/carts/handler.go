@@ -50,6 +50,11 @@ func (h *handler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := params.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	addedItem, err := h.service.AddItemToCart(r.Context(), userID, params.ProductID, params.Quantity)
 	if err != nil {
 		if errors.Is(err, ErrCartNotFound) {
@@ -92,6 +97,11 @@ func (h *handler) UpdateCartItemQuantity(w http.ResponseWriter, r *http.Request)
 	if err := json.Read(r, &params); err != nil {
 		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if err := params.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

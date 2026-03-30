@@ -26,6 +26,11 @@ func (h *handler) CreateCategories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := tempCategory.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	createdCategory, err := h.service.CreateCategories(r.Context(), tempCategory.Name, tempCategory.Description)
 	if err != nil {
 		slog.Error("failed to create category", "error", err)
@@ -81,6 +86,11 @@ func (h *handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 	if err := json.Read(r, &tempCategory); err != nil {
 		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if err := tempCategory.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 

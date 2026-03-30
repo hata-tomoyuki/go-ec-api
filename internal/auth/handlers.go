@@ -27,6 +27,11 @@ func (h *handler) RegisterUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := tempUser.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	createdUser, err := h.service.RegisterUser(r.Context(), tempUser)
 	if err != nil {
 		slog.Error("failed to register user", "error", err)
@@ -47,6 +52,11 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 	if err := json.Read(r, &tempUser); err != nil {
 		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if err := tempUser.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
@@ -144,6 +154,11 @@ func (h *handler) UpdateMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := params.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	updatedUser, err := h.service.UpdateUser(r.Context(), userID, params)
 	if err != nil {
 		slog.Error("failed to update user", "error", err, "user_id", userID)
@@ -173,6 +188,11 @@ func (h *handler) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	if err := json.Read(r, &params); err != nil {
 		slog.Error("failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if params.CurrentPassword == "" || len(params.NewPassword) < 8 {
+		json.WriteError(w, http.StatusBadRequest, ErrPasswordValidation.Error())
 		return
 	}
 

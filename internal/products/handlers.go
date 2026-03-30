@@ -59,6 +59,11 @@ func (h *handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := tempProduct.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	createdProduct, err := h.service.CreateProduct(r.Context(), tempProduct)
 	if err != nil {
 		slog.Error("failed to create product", "error", err)
@@ -85,6 +90,11 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tempProduct.ID = id
+
+	if err := tempProduct.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 
 	updatedProduct, err := h.service.UpdateProduct(r.Context(), tempProduct)
 	if err != nil {
