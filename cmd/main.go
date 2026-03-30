@@ -35,7 +35,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	logger.Info("connected to database", "dsn", cfg.db.dsn)
+	logger.Info("connected to database")
 
 	api := application{
 		config: cfg,
