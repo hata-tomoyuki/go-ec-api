@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 
 	"example.com/ecommerce/internal/env"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -331,46 +330,3 @@ func seed(ctx context.Context, pool *pgxpool.Pool) error {
 	return nil
 }
 
-func init() {
-	// .env ファイルがあれば読み込む（なくてもOK）
-	data, err := os.ReadFile(".env")
-	if err != nil {
-		return
-	}
-	for _, line := range splitLines(data) {
-		if len(line) == 0 || line[0] == '#' {
-			continue
-		}
-		for i := 0; i < len(line); i++ {
-			if line[i] == '=' {
-				key := string(line[:i])
-				val := string(line[i+1:])
-				// クォートを除去
-				if len(val) >= 2 && val[0] == '"' && val[len(val)-1] == '"' {
-					val = val[1 : len(val)-1]
-				}
-				os.Setenv(key, val)
-				break
-			}
-		}
-	}
-}
-
-func splitLines(data []byte) [][]byte {
-	var lines [][]byte
-	start := 0
-	for i := 0; i < len(data); i++ {
-		if data[i] == '\n' {
-			line := data[start:i]
-			if len(line) > 0 && line[len(line)-1] == '\r' {
-				line = line[:len(line)-1]
-			}
-			lines = append(lines, line)
-			start = i + 1
-		}
-	}
-	if start < len(data) {
-		lines = append(lines, data[start:])
-	}
-	return lines
-}
