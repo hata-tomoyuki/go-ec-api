@@ -130,6 +130,7 @@ type Category struct {
 	Description pgtype.Text        `json:"description"`
 	CreatedAt   pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt   pgtype.Timestamptz `json:"updated_at"`
+	ImageColor  string             `json:"image_color"`
 }
 
 type Order struct {
@@ -154,6 +155,8 @@ type Product struct {
 	PriceInCents int32              `json:"price_in_cents"`
 	Quantity     int32              `json:"quantity"`
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	Description  string             `json:"description"`
+	ImageColor   string             `json:"image_color"`
 }
 
 type ProductCategory struct {

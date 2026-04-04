@@ -1,23 +1,30 @@
 -- name: ListProducts :many
 SELECT
- *
-FROM
-    products;
+    p.id, p.name, p.description, p.price_in_cents, p.quantity,p.image_color, p.created_at,
+    COALESCE(pc.category_id, 0)::bigint AS category_id,
+    COALESCE(c.name, '')::text AS category_name
+FROM products p
+LEFT JOIN product_categories pc ON p.id = pc.product_id
+LEFT JOIN categories c ON pc.category_id = c.id;
 
 -- name: FindProductById :one
 SELECT
- *
-FROM
-    products
-WHERE
-    id = $1;
+    p.id, p.name, p.description, p.price_in_cents, p.quantity,
+    p.image_color, p.created_at,
+    COALESCE(pc.category_id, 0)::bigint AS category_id,
+    COALESCE(c.name, '')::text AS category_name
+FROM products p
+LEFT JOIN product_categories pc ON p.id = pc.product_id
+LEFT JOIN categories c ON pc.category_id = c.id
+WHERE p.id = $1;
 
 -- name: CreateProduct :one
-INSERT INTO products (name, price_in_cents) VALUES ($1, $2) RETURNING *;
+INSERT INTO products (name, price_in_cents, description, image_color)
+VALUES ($1, $2, $3, $4) RETURNING *;
 
 -- name: UpdateProduct :one
 UPDATE products
-SET name = $2, price_in_cents = $3
+SET name = $2, price_in_cents = $3, description = $4, image_color = $5
 WHERE id = $1
 RETURNING *;
 
@@ -30,17 +37,24 @@ RETURNING *;
 INSERT INTO orders (customer_id) VALUES ($1) RETURNING *;
 
 -- name: ListCategories :many
-SELECT * FROM categories;
+SELECT
+    c.*,
+    (SELECT COUNT(*) FROM product_categories pc WHERE pc.category_id = c.id)::bigint AS product_count
+FROM categories c;
 
 -- name: FindCategoryById :one
-SELECT * FROM categories WHERE id = $1;
+SELECT
+    c.*,
+    (SELECT COUNT(*) FROM product_categories pc WHERE pc.category_id = c.id)::bigint AS product_count
+FROM categories c
+WHERE c.id = $1;
 
 -- name: CreateCategory :one
-INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING *;
+INSERT INTO categories (name, description, image_color) VALUES ($1, $2, $3) RETURNING *;
 
 -- name: UpdateCategory :one
 UPDATE categories
-SET name = $2, description = $3, updated_at = now()
+SET name = $2, description = $3, image_color = $4, updated_at = now()
 WHERE id = $1
 RETURNING *;
 
@@ -53,8 +67,10 @@ RETURNING *;
 SELECT
     p.id,
     p.name,
+    p.description,
     p.price_in_cents,
     p.quantity,
+    p.image_color,
     p.created_at
 FROM
     products p
