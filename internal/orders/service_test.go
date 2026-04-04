@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
+	"github.com/jackc/pgx/v5"
 )
 
 // mockDB は pgBeginner interface のモック（トランザクション不要のテスト用）
@@ -93,7 +94,17 @@ func TestServiceCancelOrder_Success(t *testing.T) {
 			return repo.Order{ID: id, CustomerID: 10, Status: repo.StatusCancelled}, nil
 		},
 	}
-	svc := &svc{q: mock}
+
+	// txMock 用の Querier も同じ mock を使う
+	tx := &mockTx{}
+	db := &mockDB{tx: tx}
+	svc := &svc{
+		q:  mock,
+		db: db,
+		newTxQ: func(_ pgx.Tx) repo.Querier {
+			return mock
+		},
+	}
 
 	order, err := svc.CancelOrder(context.Background(), 1, 10)
 	if err != nil {
@@ -101,6 +112,9 @@ func TestServiceCancelOrder_Success(t *testing.T) {
 	}
 	if order.CustomerID != 10 {
 		t.Errorf("expected customer_id=10, got %d", order.CustomerID)
+	}
+	if !tx.committed {
+		t.Error("expected transaction to be committed")
 	}
 }
 

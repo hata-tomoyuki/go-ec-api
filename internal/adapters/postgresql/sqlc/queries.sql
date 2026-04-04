@@ -89,6 +89,18 @@ INSERT INTO product_categories (product_id, category_id) VALUES ($1, $2);
 DELETE FROM product_categories
 WHERE product_id = $1 AND category_id = $2;
 
+-- name: DecrementProductQuantity :one
+UPDATE products
+SET quantity = quantity - $2
+WHERE id = $1 AND quantity >= $2
+RETURNING *;
+
+-- name: IncrementProductQuantity :one
+UPDATE products
+SET quantity = quantity + $2
+WHERE id = $1
+RETURNING *;
+
 -- name: CreateOrderItem :one
 INSERT INTO order_items (order_id, product_id, quantity, price_in_cents)
 VALUES ($1, $2, $3, $4) RETURNING *;

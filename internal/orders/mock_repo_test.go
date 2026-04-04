@@ -4,16 +4,37 @@ import (
 	"context"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+// mockTx は pgx.Tx のモック（Commit/Rollback を記録するだけ）
+type mockTx struct {
+	pgx.Tx
+	committed  bool
+	rolledBack bool
+}
+
+func (m *mockTx) Commit(ctx context.Context) error   { m.committed = true; return nil }
+func (m *mockTx) Rollback(ctx context.Context) error  { m.rolledBack = true; return nil }
+
+// mockDB は pgBeginner のモック
+type mockDB struct {
+	tx *mockTx
+}
+
+func (m *mockDB) Begin(ctx context.Context) (pgx.Tx, error) {
+	return m.tx, nil
+}
+
 // mockQuerier は Querier interface の手動モック（orders テスト用）
 type mockQuerier struct {
-	listAllOrdersFn          func(ctx context.Context) ([]repo.ListAllOrdersRow, error)
-	listOrdersByCustomerIDFn func(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error)
-	findOrderByIdFn          func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error)
-	cancelOrderFn            func(ctx context.Context, id int64) (repo.Order, error)
-	updateOrderStatusFn      func(ctx context.Context, arg repo.UpdateOrderStatusParams) (repo.Order, error)
+	listAllOrdersFn              func(ctx context.Context) ([]repo.ListAllOrdersRow, error)
+	listOrdersByCustomerIDFn     func(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error)
+	findOrderByIdFn              func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error)
+	cancelOrderFn                func(ctx context.Context, id int64) (repo.Order, error)
+	updateOrderStatusFn          func(ctx context.Context, arg repo.UpdateOrderStatusParams) (repo.Order, error)
+	incrementProductQuantityFn   func(ctx context.Context, arg repo.IncrementProductQuantityParams) (repo.Product, error)
 }
 
 func (m *mockQuerier) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRow, error) {
@@ -67,6 +88,9 @@ func (m *mockQuerier) CreateProduct(ctx context.Context, arg repo.CreateProductP
 func (m *mockQuerier) CreateUser(ctx context.Context, arg repo.CreateUserParams) (repo.User, error) {
 	panic("not implemented")
 }
+func (m *mockQuerier) DecrementProductQuantity(ctx context.Context, arg repo.DecrementProductQuantityParams) (repo.Product, error) {
+	panic("not implemented")
+}
 func (m *mockQuerier) DeleteAddress(ctx context.Context, id int32) error {
 	panic("not implemented")
 }
@@ -105,6 +129,12 @@ func (m *mockQuerier) FindUserByEmail(ctx context.Context, email string) (repo.U
 }
 func (m *mockQuerier) FindUserById(ctx context.Context, id int64) (repo.User, error) {
 	panic("not implemented")
+}
+func (m *mockQuerier) IncrementProductQuantity(ctx context.Context, arg repo.IncrementProductQuantityParams) (repo.Product, error) {
+	if m.incrementProductQuantityFn != nil {
+		return m.incrementProductQuantityFn(ctx, arg)
+	}
+	return repo.Product{}, nil
 }
 func (m *mockQuerier) InsertRefreshToken(ctx context.Context, arg repo.InsertRefreshTokenParams) (repo.RefreshToken, error) {
 	panic("not implemented")

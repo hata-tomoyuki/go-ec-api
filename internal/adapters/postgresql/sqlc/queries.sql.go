@@ -192,6 +192,60 @@ func (q *Queries) CreateOrder(ctx context.Context, customerID int64) (Order, err
 	return i, err
 }
 
+const decrementProductQuantity = `-- name: DecrementProductQuantity :one
+UPDATE products
+SET quantity = quantity - $2
+WHERE id = $1 AND quantity >= $2
+RETURNING id, name, price_in_cents, quantity, created_at, description, image_color
+`
+
+type DecrementProductQuantityParams struct {
+	ID       int64 `json:"id"`
+	Quantity int32 `json:"quantity"`
+}
+
+func (q *Queries) DecrementProductQuantity(ctx context.Context, arg DecrementProductQuantityParams) (Product, error) {
+	row := q.db.QueryRow(ctx, decrementProductQuantity, arg.ID, arg.Quantity)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.PriceInCents,
+		&i.Quantity,
+		&i.CreatedAt,
+		&i.Description,
+		&i.ImageColor,
+	)
+	return i, err
+}
+
+const incrementProductQuantity = `-- name: IncrementProductQuantity :one
+UPDATE products
+SET quantity = quantity + $2
+WHERE id = $1
+RETURNING id, name, price_in_cents, quantity, created_at, description, image_color
+`
+
+type IncrementProductQuantityParams struct {
+	ID       int64 `json:"id"`
+	Quantity int32 `json:"quantity"`
+}
+
+func (q *Queries) IncrementProductQuantity(ctx context.Context, arg IncrementProductQuantityParams) (Product, error) {
+	row := q.db.QueryRow(ctx, incrementProductQuantity, arg.ID, arg.Quantity)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.PriceInCents,
+		&i.Quantity,
+		&i.CreatedAt,
+		&i.Description,
+		&i.ImageColor,
+	)
+	return i, err
+}
+
 const createOrderItem = `-- name: CreateOrderItem :one
 INSERT INTO order_items (order_id, product_id, quantity, price_in_cents)
 VALUES ($1, $2, $3, $4) RETURNING id, order_id, product_id, quantity, price_in_cents

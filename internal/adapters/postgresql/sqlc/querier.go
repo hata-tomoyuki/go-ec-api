@@ -21,6 +21,7 @@ type Querier interface {
 	CreateOrderItem(ctx context.Context, arg CreateOrderItemParams) (OrderItem, error)
 	CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
+	DecrementProductQuantity(ctx context.Context, arg DecrementProductQuantityParams) (Product, error)
 	DeleteAddress(ctx context.Context, id int32) error
 	DeleteCategory(ctx context.Context, id int64) (Category, error)
 	DeleteExpiredRefreshTokens(ctx context.Context) error
@@ -34,6 +35,7 @@ type Querier interface {
 	FindOrderById(ctx context.Context, id int64) ([]FindOrderByIdRow, error)
 	FindProductById(ctx context.Context, id int64) (FindProductByIdRow, error)
 	FindUserByEmail(ctx context.Context, email string) (User, error)
+	IncrementProductQuantity(ctx context.Context, arg IncrementProductQuantityParams) (Product, error)
 	FindUserById(ctx context.Context, id int64) (User, error)
 	InsertRefreshToken(ctx context.Context, arg InsertRefreshTokenParams) (RefreshToken, error)
 	IsTokenRevoked(ctx context.Context, jti string) (bool, error)

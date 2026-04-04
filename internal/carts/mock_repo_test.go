@@ -73,6 +73,9 @@ func (m *mockQuerier) CreateProduct(ctx context.Context, arg repo.CreateProductP
 func (m *mockQuerier) CreateUser(ctx context.Context, arg repo.CreateUserParams) (repo.User, error) {
 	panic("not implemented")
 }
+func (m *mockQuerier) DecrementProductQuantity(ctx context.Context, arg repo.DecrementProductQuantityParams) (repo.Product, error) {
+	panic("not implemented")
+}
 func (m *mockQuerier) DeleteAddress(ctx context.Context, id int32) error {
 	panic("not implemented")
 }
@@ -107,6 +110,9 @@ func (m *mockQuerier) FindUserByEmail(ctx context.Context, email string) (repo.U
 	panic("not implemented")
 }
 func (m *mockQuerier) FindUserById(ctx context.Context, id int64) (repo.User, error) {
+	panic("not implemented")
+}
+func (m *mockQuerier) IncrementProductQuantity(ctx context.Context, arg repo.IncrementProductQuantityParams) (repo.Product, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) InsertRefreshToken(ctx context.Context, arg repo.InsertRefreshTokenParams) (repo.RefreshToken, error) {

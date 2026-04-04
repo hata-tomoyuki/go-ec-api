@@ -78,13 +78,15 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 	}
 
 	for _, item := range tempOrder.Items {
-		product, err := qtx.FindProductById(ctx, item.ProductID)
+		product, err := qtx.DecrementProductQuantity(ctx, repo.DecrementProductQuantityParams{
+			ID:       item.ProductID,
+			Quantity: item.Quantity,
+		})
 		if err != nil {
-			return repo.Order{}, ErrorProductNotFound
-		}
-
-		if product.Quantity < item.Quantity {
-			return repo.Order{}, ErrorProductNoStock
+			if errors.Is(err, pgx.ErrNoRows) {
+				return repo.Order{}, ErrorProductNoStock
+			}
+			return repo.Order{}, fmt.Errorf("failed to decrement stock: %w", err)
 		}
 
 		_, err = qtx.CreateOrderItem(ctx, repo.CreateOrderItemParams{
@@ -122,9 +124,29 @@ func (s *svc) CancelOrder(ctx context.Context, orderID int64, customerID int64) 
 		return repo.FindOrderByIdRow{}, ErrOrderNotPending
 	}
 
-	_, err = s.q.CancelOrder(ctx, orderID)
+	tx, err := s.db.Begin(ctx)
+	if err != nil {
+		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+	qtx := s.newTxQ(tx)
+
+	_, err = qtx.CancelOrder(ctx, orderID)
 	if err != nil {
 		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to cancel order: %w", err)
+	}
+
+	for _, item := range rows {
+		_, err = qtx.IncrementProductQuantity(ctx, repo.IncrementProductQuantityParams{
+			ID:       item.ProductID,
+			Quantity: item.Quantity,
+		})
+		if err != nil {
+			return repo.FindOrderByIdRow{}, fmt.Errorf("failed to restore stock: %w", err)
+		}
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return order, nil
