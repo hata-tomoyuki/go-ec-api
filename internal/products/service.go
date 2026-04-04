@@ -33,6 +33,16 @@ func buildWhereClause(params listProductsParams) (string, []interface{}, int) {
 		argN++
 	}
 
+	if params.CategoryID > 0 {
+		if whereSQL == "" {
+			whereSQL = fmt.Sprintf(" WHERE pc.category_id = $%d", argN)
+		} else {
+			whereSQL += fmt.Sprintf(" AND pc.category_id = $%d", argN)
+		}
+		args = append(args, params.CategoryID)
+		argN++
+	}
+
 	return whereSQL, args, argN
 }
 
@@ -70,7 +80,11 @@ func (s *svc) ListProductsPaginated(ctx context.Context, params listProductsPara
 		products = append(products, p)
 	}
 
-	countSQL := "SELECT COUNT(*) FROM products p" + whereSQL
+	countSQL := "SELECT COUNT(*) FROM products p"
+	if params.CategoryID > 0 {
+		countSQL += " LEFT JOIN product_categories pc ON p.id = pc.product_id"
+	}
+	countSQL += whereSQL
 	var total int
 	if err := s.db.QueryRow(ctx, countSQL, whereArgs...).Scan(&total); err != nil {
 		return paginatedProducts{}, err

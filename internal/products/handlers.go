@@ -24,11 +24,14 @@ func (h *handler) ListProduct(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(q.Get("page"))
 	limit, _ := strconv.Atoi(q.Get("limit"))
 
+	categoryID, _ := strconv.Atoi(q.Get("category_id"))
+
 	params := listProductsParams{
-		Page:   page,
-		Limit:  limit,
-		Sort:   q.Get("sort"),
-		Search: q.Get("search"),
+		Page:       page,
+		Limit:      limit,
+		Sort:       q.Get("sort"),
+		Search:     q.Get("search"),
+		CategoryID: categoryID,
 	}
 
 	if err := params.validate(); err != nil {

@@ -26,10 +26,11 @@ var allowedSorts = map[string]string{
 }
 
 type listProductsParams struct {
-	Page   int
-	Limit  int
-	Sort   string
-	Search string
+	Page       int
+	Limit      int
+	Sort       string
+	Search     string
+	CategoryID int
 }
 
 func (p *listProductsParams) validate() error {
