@@ -137,7 +137,7 @@ func TestHandlerCreateProduct_201(t *testing.T) {
 	}
 	h := NewHandler(svc)
 
-	body := `{"name":"New Hat","price_in_cents":1500}`
+	body := `{"name":"New Hat","price_in_cents":1500,"quantity":10}`
 	r := httptest.NewRequest("POST", "/products", strings.NewReader(body))
 	r.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()

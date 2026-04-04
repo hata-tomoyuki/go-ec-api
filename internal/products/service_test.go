@@ -83,6 +83,7 @@ func TestCreateProduct(t *testing.T) {
 	product, err := svc.CreateProduct(context.Background(), createProductParams{
 		Name:         "New Jacket",
 		PriceInCents: 8000,
+		Quantity:     5,
 	})
 
 	if err != nil {
@@ -112,6 +113,7 @@ func TestUpdateProduct(t *testing.T) {
 		ID:           1,
 		Name:         "Updated Jacket",
 		PriceInCents: 9000,
+		Quantity:     3,
 	})
 
 	if err != nil {

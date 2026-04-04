@@ -8,8 +8,9 @@ import (
 )
 
 var (
-	ErrProductNotFound  = errors.New("product not found")
+	ErrProductNotFound   = errors.New("product not found")
 	ErrProductValidation = errors.New("name is required and price_in_cents must be greater than 0")
+	ErrQuantityNegative  = errors.New("quantity must not be negative")
 )
 
 type createProductParams struct {
@@ -17,11 +18,15 @@ type createProductParams struct {
 	PriceInCents int32  `json:"price_in_cents"`
 	Description  string `json:"description"`
 	ImageColor   string `json:"image_color"`
+	Quantity     int32  `json:"quantity"`
 }
 
 func (p createProductParams) validate() error {
 	if p.Name == "" || p.PriceInCents <= 0 {
 		return ErrProductValidation
+	}
+	if p.Quantity < 0 {
+		return ErrQuantityNegative
 	}
 	return nil
 }
@@ -32,11 +37,15 @@ type updateProductParams struct {
 	PriceInCents int32  `json:"price_in_cents"`
 	Description  string `json:"description"`
 	ImageColor   string `json:"image_color"`
+	Quantity     int32  `json:"quantity"`
 }
 
 func (p updateProductParams) validate() error {
 	if p.Name == "" || p.PriceInCents <= 0 {
 		return ErrProductValidation
+	}
+	if p.Quantity < 0 {
+		return ErrQuantityNegative
 	}
 	return nil
 }

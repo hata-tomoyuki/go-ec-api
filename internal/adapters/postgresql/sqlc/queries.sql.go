@@ -223,8 +223,8 @@ func (q *Queries) CreateOrderItem(ctx context.Context, arg CreateOrderItemParams
 }
 
 const createProduct = `-- name: CreateProduct :one
-INSERT INTO products (name, price_in_cents, description, image_color)
-VALUES ($1, $2, $3, $4) RETURNING id, name, price_in_cents, quantity, created_at, description, image_color
+INSERT INTO products (name, price_in_cents, description, image_color, quantity)
+VALUES ($1, $2, $3, $4, $5) RETURNING id, name, price_in_cents, quantity, created_at, description, image_color
 `
 
 type CreateProductParams struct {
@@ -232,6 +232,7 @@ type CreateProductParams struct {
 	PriceInCents int32  `json:"price_in_cents"`
 	Description  string `json:"description"`
 	ImageColor   string `json:"image_color"`
+	Quantity     int32  `json:"quantity"`
 }
 
 func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (Product, error) {
@@ -240,6 +241,7 @@ func (q *Queries) CreateProduct(ctx context.Context, arg CreateProductParams) (P
 		arg.PriceInCents,
 		arg.Description,
 		arg.ImageColor,
+		arg.Quantity,
 	)
 	var i Product
 	err := row.Scan(
@@ -1150,7 +1152,7 @@ func (q *Queries) UpdateOrderStatus(ctx context.Context, arg UpdateOrderStatusPa
 
 const updateProduct = `-- name: UpdateProduct :one
 UPDATE products
-SET name = $2, price_in_cents = $3, description = $4, image_color = $5
+SET name = $2, price_in_cents = $3, description = $4, image_color = $5, quantity = $6
 WHERE id = $1
 RETURNING id, name, price_in_cents, quantity, created_at, description, image_color
 `
@@ -1161,6 +1163,7 @@ type UpdateProductParams struct {
 	PriceInCents int32  `json:"price_in_cents"`
 	Description  string `json:"description"`
 	ImageColor   string `json:"image_color"`
+	Quantity     int32  `json:"quantity"`
 }
 
 func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (Product, error) {
@@ -1170,6 +1173,7 @@ func (q *Queries) UpdateProduct(ctx context.Context, arg UpdateProductParams) (P
 		arg.PriceInCents,
 		arg.Description,
 		arg.ImageColor,
+		arg.Quantity,
 	)
 	var i Product
 	err := row.Scan(

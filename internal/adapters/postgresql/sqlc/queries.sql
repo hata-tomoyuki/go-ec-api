@@ -19,12 +19,12 @@ LEFT JOIN categories c ON pc.category_id = c.id
 WHERE p.id = $1;
 
 -- name: CreateProduct :one
-INSERT INTO products (name, price_in_cents, description, image_color)
-VALUES ($1, $2, $3, $4) RETURNING *;
+INSERT INTO products (name, price_in_cents, description, image_color, quantity)
+VALUES ($1, $2, $3, $4, $5) RETURNING *;
 
 -- name: UpdateProduct :one
 UPDATE products
-SET name = $2, price_in_cents = $3, description = $4, image_color = $5
+SET name = $2, price_in_cents = $3, description = $4, image_color = $5, quantity = $6
 WHERE id = $1
 RETURNING *;
 

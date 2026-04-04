@@ -37,6 +37,7 @@ func (s *svc) CreateProduct(ctx context.Context, tempProduct createProductParams
 		PriceInCents: tempProduct.PriceInCents,
 		Description:  tempProduct.Description,
 		ImageColor:   tempProduct.ImageColor,
+		Quantity:     tempProduct.Quantity,
 	})
 }
 
@@ -47,6 +48,7 @@ func (s *svc) UpdateProduct(ctx context.Context, tempProduct updateProductParams
 		PriceInCents: tempProduct.PriceInCents,
 		Description:  tempProduct.Description,
 		ImageColor:   tempProduct.ImageColor,
+		Quantity:     tempProduct.Quantity,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
