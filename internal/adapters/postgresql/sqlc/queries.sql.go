@@ -772,6 +772,7 @@ SELECT
     c.id, c.name, c.description, c.created_at, c.updated_at, c.image_color,
     (SELECT COUNT(*) FROM product_categories pc WHERE pc.category_id = c.id)::bigint AS product_count
 FROM categories c
+ORDER BY c.created_at DESC
 `
 
 type ListCategoriesRow struct {
@@ -878,6 +879,7 @@ SELECT
 FROM products p
 LEFT JOIN product_categories pc ON p.id = pc.product_id
 LEFT JOIN categories c ON pc.category_id = c.id
+ORDER BY p.created_at DESC
 `
 
 type ListProductsRow struct {
@@ -937,6 +939,7 @@ JOIN
     product_categories pc ON p.id = pc.product_id
 WHERE
     pc.category_id = $1
+ORDER BY p.created_at DESC
 `
 
 type ListProductsByCategoryRow struct {

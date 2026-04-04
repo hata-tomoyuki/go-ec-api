@@ -5,7 +5,8 @@ SELECT
     COALESCE(c.name, '')::text AS category_name
 FROM products p
 LEFT JOIN product_categories pc ON p.id = pc.product_id
-LEFT JOIN categories c ON pc.category_id = c.id;
+LEFT JOIN categories c ON pc.category_id = c.id
+ORDER BY p.created_at DESC;
 
 -- name: FindProductById :one
 SELECT
@@ -40,7 +41,8 @@ INSERT INTO orders (customer_id) VALUES ($1) RETURNING *;
 SELECT
     c.*,
     (SELECT COUNT(*) FROM product_categories pc WHERE pc.category_id = c.id)::bigint AS product_count
-FROM categories c;
+FROM categories c
+ORDER BY c.created_at DESC;
 
 -- name: FindCategoryById :one
 SELECT
@@ -77,7 +79,8 @@ FROM
 JOIN
     product_categories pc ON p.id = pc.product_id
 WHERE
-    pc.category_id = $1;
+    pc.category_id = $1
+ORDER BY p.created_at DESC;
 
 -- name: AddProductToCategory :exec
 INSERT INTO product_categories (product_id, category_id) VALUES ($1, $2);
