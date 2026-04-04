@@ -211,8 +211,9 @@ func TestHandlerUpdateCartItemQuantity_200(t *testing.T) {
 	}
 	h := NewHandler(svc)
 
-	body := `{"cart_item_id":1,"quantity":3}`
-	r := newRequestWithJWT("PUT", "/cart/items", body, "10")
+	body := `{"quantity":3}`
+	r := newRequestWithJWT("PUT", "/cart/items/1", body, "10")
+	r = withChiURLParam(r, "id", "1")
 	w := httptest.NewRecorder()
 
 	h.UpdateCartItemQuantity(w, r)
@@ -225,9 +226,10 @@ func TestHandlerUpdateCartItemQuantity_200(t *testing.T) {
 func TestHandlerUpdateCartItemQuantity_400_Validation(t *testing.T) {
 	h := NewHandler(&mockService{})
 
-	// cart_item_id が 0
-	body := `{"cart_item_id":0,"quantity":3}`
-	r := newRequestWithJWT("PUT", "/cart/items", body, "10")
+	// quantity が 0
+	body := `{"quantity":0}`
+	r := newRequestWithJWT("PUT", "/cart/items/1", body, "10")
+	r = withChiURLParam(r, "id", "1")
 	w := httptest.NewRecorder()
 
 	h.UpdateCartItemQuantity(w, r)
@@ -245,8 +247,9 @@ func TestHandlerUpdateCartItemQuantity_403(t *testing.T) {
 	}
 	h := NewHandler(svc)
 
-	body := `{"cart_item_id":1,"quantity":3}`
-	r := newRequestWithJWT("PUT", "/cart/items", body, "10")
+	body := `{"quantity":3}`
+	r := newRequestWithJWT("PUT", "/cart/items/1", body, "10")
+	r = withChiURLParam(r, "id", "1")
 	w := httptest.NewRecorder()
 
 	h.UpdateCartItemQuantity(w, r)

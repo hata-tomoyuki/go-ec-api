@@ -93,6 +93,12 @@ func (h *handler) UpdateCartItemQuantity(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	cartItemID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid cart item ID")
+		return
+	}
+
 	var params updateCartItemParams
 	if err := json.Read(r, &params); err != nil {
 		slog.Error("failed to read request body", "error", err)
@@ -105,7 +111,7 @@ func (h *handler) UpdateCartItemQuantity(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	updatedItem, err := h.service.UpdateCartItemQuantity(r.Context(), userID, params.CartItemID, params.Quantity)
+	updatedItem, err := h.service.UpdateCartItemQuantity(r.Context(), userID, cartItemID, params.Quantity)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrCartNotFound):
