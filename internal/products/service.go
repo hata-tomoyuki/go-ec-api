@@ -16,17 +16,17 @@ func NewService(repo repo.Querier) Service {
 	return &svc{repo: repo}
 }
 
-func (s *svc) ListProducts(ctx context.Context) ([]repo.Product, error) {
+func (s *svc) ListProducts(ctx context.Context) ([]repo.ListProductsRow, error) {
 	return s.repo.ListProducts(ctx)
 }
 
-func (s *svc) FindProductById(ctx context.Context, id int64) (repo.Product, error) {
+func (s *svc) FindProductById(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
 	product, err := s.repo.FindProductById(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return repo.Product{}, ErrProductNotFound
+			return repo.FindProductByIdRow{}, ErrProductNotFound
 		}
-		return repo.Product{}, err
+		return repo.FindProductByIdRow{}, err
 	}
 	return product, nil
 }
@@ -35,6 +35,8 @@ func (s *svc) CreateProduct(ctx context.Context, tempProduct createProductParams
 	return s.repo.CreateProduct(ctx, repo.CreateProductParams{
 		Name:         tempProduct.Name,
 		PriceInCents: tempProduct.PriceInCents,
+		Description:  tempProduct.Description,
+		ImageColor:   tempProduct.ImageColor,
 	})
 }
 
@@ -43,6 +45,8 @@ func (s *svc) UpdateProduct(ctx context.Context, tempProduct updateProductParams
 		ID:           tempProduct.ID,
 		Name:         tempProduct.Name,
 		PriceInCents: tempProduct.PriceInCents,
+		Description:  tempProduct.Description,
+		ImageColor:   tempProduct.ImageColor,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

@@ -31,7 +31,7 @@ func (h *handler) CreateCategories(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdCategory, err := h.service.CreateCategories(r.Context(), tempCategory.Name, tempCategory.Description)
+	createdCategory, err := h.service.CreateCategories(r.Context(), tempCategory.Name, tempCategory.Description, tempCategory.ImageColor)
 	if err != nil {
 		slog.Error("failed to create category", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
@@ -94,7 +94,7 @@ func (h *handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedCategory, err := h.service.UpdateCategories(r.Context(), id, tempCategory.Name, tempCategory.Description)
+	updatedCategory, err := h.service.UpdateCategories(r.Context(), id, tempCategory.Name, tempCategory.Description, tempCategory.ImageColor)
 	if err != nil {
 		if errors.Is(err, ErrCategoryNotFound) {
 			json.WriteError(w, http.StatusNotFound, err.Error())

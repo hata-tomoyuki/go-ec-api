@@ -10,10 +10,10 @@ import (
 
 func TestListProducts(t *testing.T) {
 	mock := &mockQuerier{
-		listProductsFn: func(ctx context.Context) ([]repo.Product, error) {
-			return []repo.Product{
-				newTestProduct(1, "T-shirt", 2000),
-				newTestProduct(2, "Hoodie", 5000),
+		listProductsFn: func(ctx context.Context) ([]repo.ListProductsRow, error) {
+			return []repo.ListProductsRow{
+				newTestListProductsRow(1, "T-shirt", 2000),
+				newTestListProductsRow(2, "Hoodie", 5000),
 			}, nil
 		},
 	}
@@ -34,7 +34,7 @@ func TestListProducts(t *testing.T) {
 
 func TestListProducts_Error(t *testing.T) {
 	mock := &mockQuerier{
-		listProductsFn: func(ctx context.Context) ([]repo.Product, error) {
+		listProductsFn: func(ctx context.Context) ([]repo.ListProductsRow, error) {
 			return nil, errors.New("db connection failed")
 		},
 	}
@@ -49,8 +49,8 @@ func TestListProducts_Error(t *testing.T) {
 
 func TestFindProductById(t *testing.T) {
 	mock := &mockQuerier{
-		findProductByIdFn: func(ctx context.Context, id int64) (repo.Product, error) {
-			return newTestProduct(1, "T-shirt", 2000), nil
+		findProductByIdFn: func(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
+			return newTestFindProductByIdRow(1, "T-shirt", 2000), nil
 		},
 	}
 

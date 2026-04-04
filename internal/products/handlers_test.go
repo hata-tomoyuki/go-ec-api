@@ -24,17 +24,17 @@ func withChiURLParam(r *http.Request, key, value string) *http.Request {
 // ---------- mockService ----------
 
 type mockService struct {
-	listProductsFn    func(ctx context.Context) ([]repo.Product, error)
-	findProductByIdFn func(ctx context.Context, id int64) (repo.Product, error)
+	listProductsFn    func(ctx context.Context) ([]repo.ListProductsRow, error)
+	findProductByIdFn func(ctx context.Context, id int64) (repo.FindProductByIdRow, error)
 	createProductFn   func(ctx context.Context, p createProductParams) (repo.Product, error)
 	updateProductFn   func(ctx context.Context, p updateProductParams) (repo.Product, error)
 	deleteProductFn   func(ctx context.Context, id int64) error
 }
 
-func (m *mockService) ListProducts(ctx context.Context) ([]repo.Product, error) {
+func (m *mockService) ListProducts(ctx context.Context) ([]repo.ListProductsRow, error) {
 	return m.listProductsFn(ctx)
 }
-func (m *mockService) FindProductById(ctx context.Context, id int64) (repo.Product, error) {
+func (m *mockService) FindProductById(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
 	return m.findProductByIdFn(ctx, id)
 }
 func (m *mockService) CreateProduct(ctx context.Context, p createProductParams) (repo.Product, error) {
@@ -51,10 +51,10 @@ func (m *mockService) DeleteProduct(ctx context.Context, id int64) error {
 
 func TestHandlerListProduct_200(t *testing.T) {
 	svc := &mockService{
-		listProductsFn: func(ctx context.Context) ([]repo.Product, error) {
-			return []repo.Product{
-				newTestProduct(1, "T-shirt", 2000),
-				newTestProduct(2, "Hoodie", 5000),
+		listProductsFn: func(ctx context.Context) ([]repo.ListProductsRow, error) {
+			return []repo.ListProductsRow{
+				newTestListProductsRow(1, "T-shirt", 2000),
+				newTestListProductsRow(2, "Hoodie", 5000),
 			}, nil
 		},
 	}
@@ -69,7 +69,7 @@ func TestHandlerListProduct_200(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	var products []repo.Product
+	var products []repo.ListProductsRow
 	if err := json.NewDecoder(w.Body).Decode(&products); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestHandlerListProduct_200(t *testing.T) {
 
 func TestHandlerListProduct_500(t *testing.T) {
 	svc := &mockService{
-		listProductsFn: func(ctx context.Context) ([]repo.Product, error) {
+		listProductsFn: func(ctx context.Context) ([]repo.ListProductsRow, error) {
 			return nil, errors.New("db error")
 		},
 	}
@@ -98,8 +98,8 @@ func TestHandlerListProduct_500(t *testing.T) {
 
 func TestHandlerFindProductById_200(t *testing.T) {
 	svc := &mockService{
-		findProductByIdFn: func(ctx context.Context, id int64) (repo.Product, error) {
-			return newTestProduct(1, "T-shirt", 2000), nil
+		findProductByIdFn: func(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
+			return newTestFindProductByIdRow(1, "T-shirt", 2000), nil
 		},
 	}
 	h := NewHandler(svc)

@@ -13,12 +13,12 @@ var (
 )
 
 type Service interface {
-	ListCategories(ctx context.Context) ([]repo.Category, error)
-	FindCategoryById(ctx context.Context, id int64) (repo.Category, error)
-	CreateCategories(ctx context.Context, name string, description *string) (repo.Category, error)
-	UpdateCategories(ctx context.Context, id int64, name string, description *string) (repo.Category, error)
+	ListCategories(ctx context.Context) ([]repo.ListCategoriesRow, error)
+	FindCategoryById(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error)
+	CreateCategories(ctx context.Context, name string, description *string, imageColor string) (repo.Category, error)
+	UpdateCategories(ctx context.Context, id int64, name string, description *string, imageColor string) (repo.Category, error)
 	DeleteCategory(ctx context.Context, id int64) error
-	ListProductsByCategory(ctx context.Context, categoryId int64) ([]repo.Product, error)
+	ListProductsByCategory(ctx context.Context, categoryId int64) ([]repo.ListProductsByCategoryRow, error)
 	AddProductToCategory(ctx context.Context, categoryId int64, productId int64) error
 	RemoveProductFromCategory(ctx context.Context, categoryId int64, productId int64) error
 }
@@ -26,6 +26,7 @@ type Service interface {
 type createCategoryParams struct {
 	Name        string  `json:"name"`
 	Description *string `json:"description"`
+	ImageColor  string  `json:"image_color"`
 }
 
 func (p createCategoryParams) validate() error {

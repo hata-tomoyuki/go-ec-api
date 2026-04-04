@@ -17,11 +17,11 @@ func NewService(repo repo.Querier) Service {
 	return &svc{repo: repo}
 }
 
-func (s *svc) ListCategories(ctx context.Context) ([]repo.Category, error) {
+func (s *svc) ListCategories(ctx context.Context) ([]repo.ListCategoriesRow, error) {
 	return s.repo.ListCategories(ctx)
 }
 
-func (s *svc) CreateCategories(ctx context.Context, name string, description *string) (repo.Category, error) {
+func (s *svc) CreateCategories(ctx context.Context, name string, description *string, imageColor string) (repo.Category, error) {
 	desc := pgtype.Text{Valid: false}
 	if description != nil {
 		desc = pgtype.Text{
@@ -33,21 +33,22 @@ func (s *svc) CreateCategories(ctx context.Context, name string, description *st
 	return s.repo.CreateCategory(ctx, repo.CreateCategoryParams{
 		Name:        name,
 		Description: desc,
+		ImageColor:  imageColor,
 	})
 }
 
-func (s *svc) FindCategoryById(ctx context.Context, id int64) (repo.Category, error) {
+func (s *svc) FindCategoryById(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
 	category, err := s.repo.FindCategoryById(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return repo.Category{}, ErrCategoryNotFound
+			return repo.FindCategoryByIdRow{}, ErrCategoryNotFound
 		}
-		return repo.Category{}, err
+		return repo.FindCategoryByIdRow{}, err
 	}
 	return category, nil
 }
 
-func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, description *string) (repo.Category, error) {
+func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, description *string, imageColor string) (repo.Category, error) {
 	desc := pgtype.Text{Valid: false}
 	if description != nil {
 		desc = pgtype.Text{
@@ -60,6 +61,7 @@ func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, descr
 		ID:          id,
 		Name:        name,
 		Description: desc,
+		ImageColor:  imageColor,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -81,7 +83,7 @@ func (s *svc) DeleteCategory(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (s *svc) ListProductsByCategory(ctx context.Context, categoryId int64) ([]repo.Product, error) {
+func (s *svc) ListProductsByCategory(ctx context.Context, categoryId int64) ([]repo.ListProductsByCategoryRow, error) {
 	return s.repo.ListProductsByCategory(ctx, categoryId)
 }
 

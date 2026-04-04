@@ -111,13 +111,13 @@ func (m *mockQuerier) FindCartByUserId(ctx context.Context, userID int64) (repo.
 func (m *mockQuerier) FindCartItemById(ctx context.Context, id int64) (repo.CartItem, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) FindCategoryById(ctx context.Context, id int64) (repo.Category, error) {
+func (m *mockQuerier) FindCategoryById(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) FindProductById(ctx context.Context, id int64) (repo.Product, error) {
+func (m *mockQuerier) FindProductById(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) ListAddressesByUserId(ctx context.Context, userID int64) ([]repo.Address, error) {
@@ -129,16 +129,16 @@ func (m *mockQuerier) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRo
 func (m *mockQuerier) ListCartItemsByUserId(ctx context.Context, userID int64) ([]repo.ListCartItemsByUserIdRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) ListCategories(ctx context.Context) ([]repo.Category, error) {
+func (m *mockQuerier) ListCategories(ctx context.Context) ([]repo.ListCategoriesRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) ListProducts(ctx context.Context) ([]repo.Product, error) {
+func (m *mockQuerier) ListProducts(ctx context.Context) ([]repo.ListProductsRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) ListProductsByCategory(ctx context.Context, categoryID int64) ([]repo.Product, error) {
+func (m *mockQuerier) ListProductsByCategory(ctx context.Context, categoryID int64) ([]repo.ListProductsByCategoryRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) RemoveItemFromCart(ctx context.Context, id int64) (repo.CartItem, error) {

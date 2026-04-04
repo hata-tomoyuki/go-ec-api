@@ -9,17 +9,17 @@ import (
 
 // mockQuerier は Querier interface の手動モック（products テスト用）
 type mockQuerier struct {
-	listProductsFn    func(ctx context.Context) ([]repo.Product, error)
-	findProductByIdFn func(ctx context.Context, id int64) (repo.Product, error)
+	listProductsFn    func(ctx context.Context) ([]repo.ListProductsRow, error)
+	findProductByIdFn func(ctx context.Context, id int64) (repo.FindProductByIdRow, error)
 	createProductFn   func(ctx context.Context, arg repo.CreateProductParams) (repo.Product, error)
 	updateProductFn   func(ctx context.Context, arg repo.UpdateProductParams) (repo.Product, error)
 	deleteProductFn   func(ctx context.Context, id int64) (repo.Product, error)
 }
 
-func (m *mockQuerier) ListProducts(ctx context.Context) ([]repo.Product, error) {
+func (m *mockQuerier) ListProducts(ctx context.Context) ([]repo.ListProductsRow, error) {
 	return m.listProductsFn(ctx)
 }
-func (m *mockQuerier) FindProductById(ctx context.Context, id int64) (repo.Product, error) {
+func (m *mockQuerier) FindProductById(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
 	return m.findProductByIdFn(ctx, id)
 }
 func (m *mockQuerier) CreateProduct(ctx context.Context, arg repo.CreateProductParams) (repo.Product, error) {
@@ -85,7 +85,7 @@ func (m *mockQuerier) DeleteRefreshTokensByUserId(ctx context.Context, userID in
 func (m *mockQuerier) FindAddressById(ctx context.Context, id int32) (repo.Address, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) FindCategoryById(ctx context.Context, id int64) (repo.Category, error) {
+func (m *mockQuerier) FindCategoryById(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
@@ -112,13 +112,13 @@ func (m *mockQuerier) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRo
 func (m *mockQuerier) ListCartItemsByUserId(ctx context.Context, userID int64) ([]repo.ListCartItemsByUserIdRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) ListCategories(ctx context.Context) ([]repo.Category, error) {
+func (m *mockQuerier) ListCategories(ctx context.Context) ([]repo.ListCategoriesRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) ListProductsByCategory(ctx context.Context, categoryID int64) ([]repo.Product, error) {
+func (m *mockQuerier) ListProductsByCategory(ctx context.Context, categoryID int64) ([]repo.ListProductsByCategoryRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) FindCartByUserId(ctx context.Context, userID int64) (repo.Cart, error) {
@@ -162,6 +162,28 @@ func newTestProduct(id int64, name string, price int32) repo.Product {
 		Name:         name,
 		PriceInCents: price,
 		Quantity:     10,
+		CreatedAt:    pgtype.Timestamptz{Valid: true},
+	}
+}
+
+func newTestListProductsRow(id int64, name string, price int32) repo.ListProductsRow {
+	return repo.ListProductsRow{
+		ID:           id,
+		Name:         name,
+		PriceInCents: price,
+		Quantity:     10,
+		ImageColor:   "from-gray-400 to-gray-600",
+		CreatedAt:    pgtype.Timestamptz{Valid: true},
+	}
+}
+
+func newTestFindProductByIdRow(id int64, name string, price int32) repo.FindProductByIdRow {
+	return repo.FindProductByIdRow{
+		ID:           id,
+		Name:         name,
+		PriceInCents: price,
+		Quantity:     10,
+		ImageColor:   "from-gray-400 to-gray-600",
 		CreatedAt:    pgtype.Timestamptz{Valid: true},
 	}
 }

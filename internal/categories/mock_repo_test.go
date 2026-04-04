@@ -9,20 +9,20 @@ import (
 
 // mockQuerier は Querier interface の手動モック（categories テスト用）
 type mockQuerier struct {
-	findCategoryByIdFn          func(ctx context.Context, id int64) (repo.Category, error)
-	listCategoriesFn            func(ctx context.Context) ([]repo.Category, error)
+	findCategoryByIdFn          func(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error)
+	listCategoriesFn            func(ctx context.Context) ([]repo.ListCategoriesRow, error)
 	createCategoryFn            func(ctx context.Context, arg repo.CreateCategoryParams) (repo.Category, error)
 	updateCategoryFn            func(ctx context.Context, arg repo.UpdateCategoryParams) (repo.Category, error)
 	deleteCategoryFn            func(ctx context.Context, id int64) (repo.Category, error)
-	listProductsByCategoryFn    func(ctx context.Context, categoryID int64) ([]repo.Product, error)
+	listProductsByCategoryFn    func(ctx context.Context, categoryID int64) ([]repo.ListProductsByCategoryRow, error)
 	addProductToCategoryFn      func(ctx context.Context, arg repo.AddProductToCategoryParams) error
 	removeProductFromCategoryFn func(ctx context.Context, arg repo.RemoveProductFromCategoryParams) error
 }
 
-func (m *mockQuerier) FindCategoryById(ctx context.Context, id int64) (repo.Category, error) {
+func (m *mockQuerier) FindCategoryById(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
 	return m.findCategoryByIdFn(ctx, id)
 }
-func (m *mockQuerier) ListCategories(ctx context.Context) ([]repo.Category, error) {
+func (m *mockQuerier) ListCategories(ctx context.Context) ([]repo.ListCategoriesRow, error) {
 	return m.listCategoriesFn(ctx)
 }
 func (m *mockQuerier) CreateCategory(ctx context.Context, arg repo.CreateCategoryParams) (repo.Category, error) {
@@ -34,7 +34,7 @@ func (m *mockQuerier) UpdateCategory(ctx context.Context, arg repo.UpdateCategor
 func (m *mockQuerier) DeleteCategory(ctx context.Context, id int64) (repo.Category, error) {
 	return m.deleteCategoryFn(ctx, id)
 }
-func (m *mockQuerier) ListProductsByCategory(ctx context.Context, categoryID int64) ([]repo.Product, error) {
+func (m *mockQuerier) ListProductsByCategory(ctx context.Context, categoryID int64) ([]repo.ListProductsByCategoryRow, error) {
 	return m.listProductsByCategoryFn(ctx, categoryID)
 }
 func (m *mockQuerier) AddProductToCategory(ctx context.Context, arg repo.AddProductToCategoryParams) error {
@@ -103,7 +103,7 @@ func (m *mockQuerier) FindCartItemById(ctx context.Context, id int64) (repo.Cart
 func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) FindProductById(ctx context.Context, id int64) (repo.Product, error) {
+func (m *mockQuerier) FindProductById(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) FindUserByEmail(ctx context.Context, email string) (repo.User, error) {
@@ -130,7 +130,7 @@ func (m *mockQuerier) ListCartItemsByUserId(ctx context.Context, userID int64) (
 func (m *mockQuerier) ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) ListProducts(ctx context.Context) ([]repo.Product, error) {
+func (m *mockQuerier) ListProducts(ctx context.Context) ([]repo.ListProductsRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) RemoveItemFromCart(ctx context.Context, id int64) (repo.CartItem, error) {
@@ -166,5 +166,28 @@ func newTestCategory(id int64, name string) repo.Category {
 		Description: pgtype.Text{Valid: false},
 		CreatedAt:   pgtype.Timestamptz{Valid: true},
 		UpdatedAt:   pgtype.Timestamptz{Valid: true},
+		ImageColor:  "from-gray-400 to-gray-600",
+	}
+}
+
+func newTestListCategoriesRow(id int64, name string) repo.ListCategoriesRow {
+	return repo.ListCategoriesRow{
+		ID:          id,
+		Name:        name,
+		Description: pgtype.Text{Valid: false},
+		CreatedAt:   pgtype.Timestamptz{Valid: true},
+		UpdatedAt:   pgtype.Timestamptz{Valid: true},
+		ImageColor:  "from-gray-400 to-gray-600",
+	}
+}
+
+func newTestFindCategoryByIdRow(id int64, name string) repo.FindCategoryByIdRow {
+	return repo.FindCategoryByIdRow{
+		ID:          id,
+		Name:        name,
+		Description: pgtype.Text{Valid: false},
+		CreatedAt:   pgtype.Timestamptz{Valid: true},
+		UpdatedAt:   pgtype.Timestamptz{Valid: true},
+		ImageColor:  "from-gray-400 to-gray-600",
 	}
 }

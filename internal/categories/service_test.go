@@ -17,7 +17,7 @@ func TestCreateCategories_Success(t *testing.T) {
 	}
 
 	svc := NewService(mock)
-	category, err := svc.CreateCategories(context.Background(), "Electronics", nil)
+	category, err := svc.CreateCategories(context.Background(), "Electronics", nil, "from-gray-400 to-gray-600")
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -32,8 +32,8 @@ func TestCreateCategories_Success(t *testing.T) {
 
 func TestFindCategoryById_Success(t *testing.T) {
 	mock := &mockQuerier{
-		findCategoryByIdFn: func(ctx context.Context, id int64) (repo.Category, error) {
-			return newTestCategory(1, "Electronics"), nil
+		findCategoryByIdFn: func(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
+			return newTestFindCategoryByIdRow(1, "Electronics"), nil
 		},
 	}
 
@@ -50,8 +50,8 @@ func TestFindCategoryById_Success(t *testing.T) {
 
 func TestFindCategoryById_NotFound(t *testing.T) {
 	mock := &mockQuerier{
-		findCategoryByIdFn: func(ctx context.Context, id int64) (repo.Category, error) {
-			return repo.Category{}, pgx.ErrNoRows
+		findCategoryByIdFn: func(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
+			return repo.FindCategoryByIdRow{}, pgx.ErrNoRows
 		},
 	}
 
@@ -71,7 +71,7 @@ func TestUpdateCategories_Success(t *testing.T) {
 	}
 
 	svc := NewService(mock)
-	category, err := svc.UpdateCategories(context.Background(), 1, "Updated Electronics", nil)
+	category, err := svc.UpdateCategories(context.Background(), 1, "Updated Electronics", nil, "from-gray-400 to-gray-600")
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -89,7 +89,7 @@ func TestUpdateCategories_NotFound(t *testing.T) {
 	}
 
 	svc := NewService(mock)
-	_, err := svc.UpdateCategories(context.Background(), 999, "Updated Electronics", nil)
+	_, err := svc.UpdateCategories(context.Background(), 999, "Updated Electronics", nil, "from-gray-400 to-gray-600")
 
 	if !errors.Is(err, ErrCategoryNotFound) {
 		t.Fatalf("expected ErrCategoryNotFound, got %v", err)

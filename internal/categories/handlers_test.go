@@ -23,32 +23,32 @@ func withChiURLParam(r *http.Request, key, value string) *http.Request {
 // ---------- mockService ----------
 
 type mockService struct {
-	listCategoriesFn            func(ctx context.Context) ([]repo.Category, error)
-	findCategoryByIdFn          func(ctx context.Context, id int64) (repo.Category, error)
-	createCategoriesFn          func(ctx context.Context, name string, description *string) (repo.Category, error)
-	updateCategoriesFn          func(ctx context.Context, id int64, name string, description *string) (repo.Category, error)
+	listCategoriesFn            func(ctx context.Context) ([]repo.ListCategoriesRow, error)
+	findCategoryByIdFn          func(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error)
+	createCategoriesFn          func(ctx context.Context, name string, description *string, imageColor string) (repo.Category, error)
+	updateCategoriesFn          func(ctx context.Context, id int64, name string, description *string, imageColor string) (repo.Category, error)
 	deleteCategoryFn            func(ctx context.Context, id int64) error
-	listProductsByCategoryFn    func(ctx context.Context, categoryId int64) ([]repo.Product, error)
+	listProductsByCategoryFn    func(ctx context.Context, categoryId int64) ([]repo.ListProductsByCategoryRow, error)
 	addProductToCategoryFn      func(ctx context.Context, categoryId int64, productId int64) error
 	removeProductFromCategoryFn func(ctx context.Context, categoryId int64, productId int64) error
 }
 
-func (m *mockService) ListCategories(ctx context.Context) ([]repo.Category, error) {
+func (m *mockService) ListCategories(ctx context.Context) ([]repo.ListCategoriesRow, error) {
 	return m.listCategoriesFn(ctx)
 }
-func (m *mockService) FindCategoryById(ctx context.Context, id int64) (repo.Category, error) {
+func (m *mockService) FindCategoryById(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
 	return m.findCategoryByIdFn(ctx, id)
 }
-func (m *mockService) CreateCategories(ctx context.Context, name string, description *string) (repo.Category, error) {
-	return m.createCategoriesFn(ctx, name, description)
+func (m *mockService) CreateCategories(ctx context.Context, name string, description *string, imageColor string) (repo.Category, error) {
+	return m.createCategoriesFn(ctx, name, description, imageColor)
 }
-func (m *mockService) UpdateCategories(ctx context.Context, id int64, name string, description *string) (repo.Category, error) {
-	return m.updateCategoriesFn(ctx, id, name, description)
+func (m *mockService) UpdateCategories(ctx context.Context, id int64, name string, description *string, imageColor string) (repo.Category, error) {
+	return m.updateCategoriesFn(ctx, id, name, description, imageColor)
 }
 func (m *mockService) DeleteCategory(ctx context.Context, id int64) error {
 	return m.deleteCategoryFn(ctx, id)
 }
-func (m *mockService) ListProductsByCategory(ctx context.Context, categoryId int64) ([]repo.Product, error) {
+func (m *mockService) ListProductsByCategory(ctx context.Context, categoryId int64) ([]repo.ListProductsByCategoryRow, error) {
 	return m.listProductsByCategoryFn(ctx, categoryId)
 }
 func (m *mockService) AddProductToCategory(ctx context.Context, categoryId int64, productId int64) error {
@@ -62,7 +62,7 @@ func (m *mockService) RemoveProductFromCategory(ctx context.Context, categoryId 
 
 func TestHandlerCreateCategories_201(t *testing.T) {
 	svc := &mockService{
-		createCategoriesFn: func(ctx context.Context, name string, description *string) (repo.Category, error) {
+		createCategoriesFn: func(ctx context.Context, name string, description *string, imageColor string) (repo.Category, error) {
 			return newTestCategory(1, name), nil
 		},
 	}
@@ -106,10 +106,10 @@ func TestHandlerCreateCategories_400_Validation(t *testing.T) {
 
 func TestHandlerListCategories_200(t *testing.T) {
 	svc := &mockService{
-		listCategoriesFn: func(ctx context.Context) ([]repo.Category, error) {
-			return []repo.Category{
-				newTestCategory(1, "Electronics"),
-				newTestCategory(2, "Clothing"),
+		listCategoriesFn: func(ctx context.Context) ([]repo.ListCategoriesRow, error) {
+			return []repo.ListCategoriesRow{
+				newTestListCategoriesRow(1, "Electronics"),
+				newTestListCategoriesRow(2, "Clothing"),
 			}, nil
 		},
 	}
@@ -124,7 +124,7 @@ func TestHandlerListCategories_200(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	var categories []repo.Category
+	var categories []repo.ListCategoriesRow
 	if err := json.NewDecoder(w.Body).Decode(&categories); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
@@ -135,8 +135,8 @@ func TestHandlerListCategories_200(t *testing.T) {
 
 func TestHandlerFindCategoryById_200(t *testing.T) {
 	svc := &mockService{
-		findCategoryByIdFn: func(ctx context.Context, id int64) (repo.Category, error) {
-			return newTestCategory(1, "Electronics"), nil
+		findCategoryByIdFn: func(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
+			return newTestFindCategoryByIdRow(1, "Electronics"), nil
 		},
 	}
 	h := NewHandler(svc)
@@ -154,8 +154,8 @@ func TestHandlerFindCategoryById_200(t *testing.T) {
 
 func TestHandlerFindCategoryById_404(t *testing.T) {
 	svc := &mockService{
-		findCategoryByIdFn: func(ctx context.Context, id int64) (repo.Category, error) {
-			return repo.Category{}, ErrCategoryNotFound
+		findCategoryByIdFn: func(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
+			return repo.FindCategoryByIdRow{}, ErrCategoryNotFound
 		},
 	}
 	h := NewHandler(svc)
@@ -187,7 +187,7 @@ func TestHandlerFindCategoryById_400_InvalidID(t *testing.T) {
 
 func TestHandlerUpdateCategory_200(t *testing.T) {
 	svc := &mockService{
-		updateCategoriesFn: func(ctx context.Context, id int64, name string, description *string) (repo.Category, error) {
+		updateCategoriesFn: func(ctx context.Context, id int64, name string, description *string, imageColor string) (repo.Category, error) {
 			return newTestCategory(id, name), nil
 		},
 	}
@@ -262,8 +262,8 @@ func TestHandlerDeleteCategory_404(t *testing.T) {
 
 func TestHandlerListProductsByCategory_200(t *testing.T) {
 	svc := &mockService{
-		listProductsByCategoryFn: func(ctx context.Context, categoryId int64) ([]repo.Product, error) {
-			return []repo.Product{
+		listProductsByCategoryFn: func(ctx context.Context, categoryId int64) ([]repo.ListProductsByCategoryRow, error) {
+			return []repo.ListProductsByCategoryRow{
 				{ID: 1, Name: "T-shirt", PriceInCents: 2000},
 				{ID: 2, Name: "Hoodie", PriceInCents: 5000},
 			}, nil
@@ -281,7 +281,7 @@ func TestHandlerListProductsByCategory_200(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	var products []repo.Product
+	var products []repo.ListProductsByCategoryRow
 	if err := json.NewDecoder(w.Body).Decode(&products); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
