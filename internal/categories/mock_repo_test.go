@@ -100,7 +100,7 @@ func (m *mockQuerier) FindCartByUserId(ctx context.Context, userID int64) (repo.
 func (m *mockQuerier) FindCartItemById(ctx context.Context, id int64) (repo.CartItem, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
+func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) FindProductById(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {

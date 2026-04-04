@@ -88,7 +88,7 @@ func (m *mockQuerier) FindAddressById(ctx context.Context, id int32) (repo.Addre
 func (m *mockQuerier) FindCategoryById(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
+func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) FindUserByEmail(ctx context.Context, email string) (repo.User, error) {
