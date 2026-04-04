@@ -66,22 +66,23 @@ func Run(ctx context.Context, pool *pgxpool.Pool) error {
 	// Categories
 	// --------------------------------------------------
 	type cat struct {
-		name string
-		desc string
+		name       string
+		desc       string
+		imageColor string
 	}
 	categories := []cat{
-		{"メンズファッション", "メンズ向けの衣類・アクセサリー"},
-		{"レディースファッション", "レディース向けの衣類・アクセサリー"},
-		{"家電・ガジェット", "最新の家電製品やガジェット"},
-		{"食品・グルメ", "厳選された食品・飲料"},
-		{"本・書籍", "話題の書籍・専門書"},
+		{"メンズファッション", "メンズ向けの衣類・アクセサリー", "from-blue-600 to-blue-800"},
+		{"レディースファッション", "レディース向けの衣類・アクセサリー", "from-pink-500 to-rose-600"},
+		{"家電・ガジェット", "最新の家電製品やガジェット", "from-slate-600 to-slate-800"},
+		{"食品・グルメ", "厳選された食品・飲料", "from-amber-500 to-orange-600"},
+		{"本・書籍", "話題の書籍・専門書", "from-emerald-600 to-teal-700"},
 	}
 
 	catIDs := make([]int64, len(categories))
 	for i, c := range categories {
 		err = tx.QueryRow(ctx,
-			`INSERT INTO categories (name, description) VALUES ($1, $2) RETURNING id`,
-			c.name, c.desc,
+			`INSERT INTO categories (name, description, image_color) VALUES ($1, $2, $3) RETURNING id`,
+			c.name, c.desc, c.imageColor,
 		).Scan(&catIDs[i])
 		if err != nil {
 			return fmt.Errorf("カテゴリ %q の作成に失敗: %w", c.name, err)
@@ -94,35 +95,41 @@ func Run(ctx context.Context, pool *pgxpool.Pool) error {
 	// --------------------------------------------------
 	type prod struct {
 		name         string
+		description  string
 		priceInCents int32
 		quantity     int32
+		imageColor   string
 		categoryIdx  int
 	}
 	products := []prod{
 		// メンズファッション (catIDs[0])
-		{"プレミアムコットンTシャツ", 4980, 50, 0},
-		{"スリムフィットデニムパンツ", 8980, 30, 0},
-		{"レザーウォレット", 12800, 20, 0},
+		{"プレミアムコットンTシャツ", "上質なコットン素材を使用した、肌触りの良いベーシックTシャツ。シンプルなデザインで普段使いからジャケットのインナーまで幅広く活躍します。", 4980, 50, "from-sky-400 to-blue-600", 0},
+		{"スリムフィットデニムパンツ", "美しいシルエットにこだわったスリムフィットデニム。程よいストレッチ性があり、快適な履き心地と洗練された印象を両立した一本です。", 8980, 30, "from-indigo-500 to-blue-700", 0},
+		{"レザーウォレット", "高級感のあるレザーを使用した上品なウォレット。使うほどに風合いが増し、収納力とデザイン性を兼ね備えた長く愛用できるアイテムです。", 12800, 20, "from-amber-700 to-orange-900", 0},
+
 		// レディースファッション (catIDs[1])
-		{"フローラルワンピース", 6980, 25, 1},
-		{"カシミアニットセーター", 19800, 15, 1},
+		{"フローラルワンピース", "華やかなフローラル柄が魅力のワンピース。軽やかな着心地で、デイリーからお出かけまで女性らしいスタイルを演出します。", 6980, 25, "from-pink-400 to-rose-500", 1},
+		{"カシミアニットセーター", "やわらかなカシミア素材を使用した、上品で暖かなニットセーター。シンプルなデザインで秋冬のコーディネートに高級感をプラスします。", 19800, 15, "from-rose-400 to-pink-600", 1},
+
 		// 家電・ガジェット (catIDs[2])
-		{"ワイヤレスノイズキャンセリングヘッドホン", 34800, 40, 2},
-		{"スマートウォッチ Pro", 49800, 35, 2},
-		{"ポータブルBluetoothスピーカー", 12800, 60, 2},
+		{"ワイヤレスノイズキャンセリングヘッドホン", "高性能ノイズキャンセリング機能を搭載したワイヤレスヘッドホン。クリアな音質と快適な装着感で、通勤や作業時間をより充実させます。", 34800, 40, "from-slate-500 to-gray-700", 2},
+		{"スマートウォッチ Pro", "健康管理や通知機能を備えた多機能スマートウォッチ。スタイリッシュなデザインと高い実用性で、日常生活をスマートにサポートします。", 49800, 35, "from-gray-600 to-slate-800", 2},
+		{"ポータブルBluetoothスピーカー", "コンパクトながら迫力あるサウンドを楽しめるBluetoothスピーカー。持ち運びしやすく、自宅でもアウトドアでも活躍します。", 12800, 60, "from-zinc-500 to-slate-700", 2},
+
 		// 食品・グルメ (catIDs[3])
-		{"宇治抹茶スイーツセット", 3980, 100, 3},
-		{"国産黒毛和牛 すき焼きセット", 9800, 20, 3},
+		{"宇治抹茶スイーツセット", "香り高い宇治抹茶を贅沢に使用したスイーツの詰め合わせ。上品な甘さとほろ苦さが楽しめる、ギフトにも人気のセットです。", 3980, 100, "from-amber-400 to-orange-500", 3},
+		{"国産黒毛和牛 すき焼きセット", "厳選した国産黒毛和牛を使用した贅沢なすき焼きセット。とろけるような旨みとやわらかさをご家庭で手軽に楽しめます。", 9800, 20, "from-orange-500 to-red-600", 3},
+
 		// 本・書籍 (catIDs[4])
-		{"はじめてのプログラミング入門", 2980, 200, 4},
-		{"AI時代の働き方改革", 1980, 150, 4},
+		{"はじめてのプログラミング入門", "プログラミングの基礎をやさしく学べる初心者向け入門書。図解やサンプルコードが豊富で、初めて学ぶ方にもわかりやすい一冊です。", 2980, 200, "from-emerald-500 to-teal-600", 4},
+		{"AI時代の働き方改革", "AI時代に求められる仕事の進め方やキャリア形成を解説した実践書。変化の大きい時代を生き抜くためのヒントが詰まっています。", 1980, 150, "from-teal-500 to-emerald-700", 4},
 	}
 
 	prodIDs := make([]int64, len(products))
 	for i, p := range products {
 		err = tx.QueryRow(ctx,
-			`INSERT INTO products (name, price_in_cents, quantity) VALUES ($1, $2, $3) RETURNING id`,
-			p.name, p.priceInCents, p.quantity,
+			`INSERT INTO products (name, description, price_in_cents, quantity, image_color) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+			p.name, p.description, p.priceInCents, p.quantity, p.imageColor,
 		).Scan(&prodIDs[i])
 		if err != nil {
 			return fmt.Errorf("商品 %q の作成に失敗: %w", p.name, err)
@@ -178,9 +185,9 @@ func Run(ctx context.Context, pool *pgxpool.Pool) error {
 		prodIdx  int
 		quantity int32
 	}{
-		{0, 2},  // プレミアムコットンTシャツ
-		{5, 1},  // ワイヤレスノイズキャンセリングヘッドホン
-		{8, 3},  // 宇治抹茶スイーツセット
+		{0, 2}, // プレミアムコットンTシャツ
+		{5, 1}, // ワイヤレスノイズキャンセリングヘッドホン
+		{8, 3}, // 宇治抹茶スイーツセット
 	}
 	for _, ci := range cartItems {
 		_, err = tx.Exec(ctx,
@@ -211,8 +218,8 @@ func Run(ctx context.Context, pool *pgxpool.Pool) error {
 		quantity     int32
 		priceInCents int32
 	}{
-		{0, 2, 4980},  // Tシャツ×2
-		{8, 1, 3980},  // 抹茶スイーツ×1
+		{0, 2, 4980}, // Tシャツ×2
+		{8, 1, 3980}, // 抹茶スイーツ×1
 	} {
 		_, err = tx.Exec(ctx,
 			`INSERT INTO order_items (order_id, product_id, quantity, price_in_cents)
