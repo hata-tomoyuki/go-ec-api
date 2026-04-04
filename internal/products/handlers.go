@@ -19,14 +19,31 @@ func NewHandler(service Service) *handler {
 }
 
 func (h *handler) ListProduct(w http.ResponseWriter, r *http.Request) {
-	products, err := h.service.ListProducts(r.Context())
+	q := r.URL.Query()
+
+	page, _ := strconv.Atoi(q.Get("page"))
+	limit, _ := strconv.Atoi(q.Get("limit"))
+
+	params := listProductsParams{
+		Page:   page,
+		Limit:  limit,
+		Sort:   q.Get("sort"),
+		Search: q.Get("search"),
+	}
+
+	if err := params.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := h.service.ListProductsPaginated(r.Context(), params)
 	if err != nil {
 		slog.Error("failed to list products", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	json.Write(w, http.StatusOK, products)
+	json.Write(w, http.StatusOK, result)
 }
 
 func (h *handler) FindProductById(w http.ResponseWriter, r *http.Request) {

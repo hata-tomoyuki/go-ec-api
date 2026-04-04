@@ -4,6 +4,8 @@ import (
 	"context"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -192,4 +194,43 @@ func newTestFindProductByIdRow(id int64, name string, price int32) repo.FindProd
 		ImageColor:   "from-gray-400 to-gray-600",
 		CreatedAt:    pgtype.Timestamptz{Valid: true},
 	}
+}
+
+func newTestPaginatedProductRow(id int64, name string, price int32) paginatedProductRow {
+	return paginatedProductRow{
+		ID:           id,
+		Name:         name,
+		PriceInCents: price,
+		Quantity:     10,
+		ImageColor:   "from-gray-400 to-gray-600",
+		CreatedAt:    pgtype.Timestamptz{Valid: true},
+	}
+}
+
+// mockDBTX は repo.DBTX interface のモック（テスト用）
+type mockDBTX struct {
+	execFn     func(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error)
+	queryFn    func(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
+	queryRowFn func(ctx context.Context, sql string, args ...interface{}) pgx.Row
+}
+
+func (m *mockDBTX) Exec(ctx context.Context, sql string, args ...interface{}) (pgconn.CommandTag, error) {
+	if m.execFn != nil {
+		return m.execFn(ctx, sql, args...)
+	}
+	return pgconn.CommandTag{}, nil
+}
+
+func (m *mockDBTX) Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error) {
+	if m.queryFn != nil {
+		return m.queryFn(ctx, sql, args...)
+	}
+	return nil, nil
+}
+
+func (m *mockDBTX) QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row {
+	if m.queryRowFn != nil {
+		return m.queryRowFn(ctx, sql, args...)
+	}
+	return nil
 }

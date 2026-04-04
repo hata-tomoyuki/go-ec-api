@@ -24,15 +24,19 @@ func withChiURLParam(r *http.Request, key, value string) *http.Request {
 // ---------- mockService ----------
 
 type mockService struct {
-	listProductsFn    func(ctx context.Context) ([]repo.ListProductsRow, error)
-	findProductByIdFn func(ctx context.Context, id int64) (repo.FindProductByIdRow, error)
-	createProductFn   func(ctx context.Context, p createProductParams) (repo.Product, error)
-	updateProductFn   func(ctx context.Context, p updateProductParams) (repo.Product, error)
-	deleteProductFn   func(ctx context.Context, id int64) error
+	listProductsFn          func(ctx context.Context) ([]repo.ListProductsRow, error)
+	listProductsPaginatedFn func(ctx context.Context, params listProductsParams) (paginatedProducts, error)
+	findProductByIdFn       func(ctx context.Context, id int64) (repo.FindProductByIdRow, error)
+	createProductFn         func(ctx context.Context, p createProductParams) (repo.Product, error)
+	updateProductFn         func(ctx context.Context, p updateProductParams) (repo.Product, error)
+	deleteProductFn         func(ctx context.Context, id int64) error
 }
 
 func (m *mockService) ListProducts(ctx context.Context) ([]repo.ListProductsRow, error) {
 	return m.listProductsFn(ctx)
+}
+func (m *mockService) ListProductsPaginated(ctx context.Context, params listProductsParams) (paginatedProducts, error) {
+	return m.listProductsPaginatedFn(ctx, params)
 }
 func (m *mockService) FindProductById(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
 	return m.findProductByIdFn(ctx, id)
@@ -49,12 +53,17 @@ func (m *mockService) DeleteProduct(ctx context.Context, id int64) error {
 
 // ---------- Tests ----------
 
-func TestHandlerListProduct_200(t *testing.T) {
+func TestHandlerListProduct_200_Default(t *testing.T) {
 	svc := &mockService{
-		listProductsFn: func(ctx context.Context) ([]repo.ListProductsRow, error) {
-			return []repo.ListProductsRow{
-				newTestListProductsRow(1, "T-shirt", 2000),
-				newTestListProductsRow(2, "Hoodie", 5000),
+		listProductsPaginatedFn: func(ctx context.Context, params listProductsParams) (paginatedProducts, error) {
+			return paginatedProducts{
+				Data: []paginatedProductRow{
+					newTestPaginatedProductRow(1, "T-shirt", 2000),
+					newTestPaginatedProductRow(2, "Hoodie", 5000),
+				},
+				Total: 2,
+				Page:  1,
+				Limit: 20,
 			}, nil
 		},
 	}
@@ -69,19 +78,85 @@ func TestHandlerListProduct_200(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	var products []repo.ListProductsRow
-	if err := json.NewDecoder(w.Body).Decode(&products); err != nil {
+	var result paginatedProducts
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if len(products) != 2 {
-		t.Errorf("expected 2 products, got %d", len(products))
+	if len(result.Data) != 2 {
+		t.Errorf("expected 2 products, got %d", len(result.Data))
+	}
+	if result.Total != 2 {
+		t.Errorf("expected total=2, got %d", result.Total)
+	}
+}
+
+func TestHandlerListProduct_200_WithQueryParams(t *testing.T) {
+	var capturedParams listProductsParams
+	svc := &mockService{
+		listProductsPaginatedFn: func(ctx context.Context, params listProductsParams) (paginatedProducts, error) {
+			capturedParams = params
+			return paginatedProducts{
+				Data:  []paginatedProductRow{},
+				Total: 0,
+				Page:  params.Page,
+				Limit: params.Limit,
+			}, nil
+		},
+	}
+	h := NewHandler(svc)
+
+	r := httptest.NewRequest("GET", "/products?page=2&limit=10&sort=price_asc&search=shirt", nil)
+	w := httptest.NewRecorder()
+
+	h.ListProduct(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", w.Code)
+	}
+	if capturedParams.Page != 2 {
+		t.Errorf("expected page=2, got %d", capturedParams.Page)
+	}
+	if capturedParams.Limit != 10 {
+		t.Errorf("expected limit=10, got %d", capturedParams.Limit)
+	}
+	if capturedParams.Sort != "price_asc" {
+		t.Errorf("expected sort='price_asc', got '%s'", capturedParams.Sort)
+	}
+	if capturedParams.Search != "shirt" {
+		t.Errorf("expected search='shirt', got '%s'", capturedParams.Search)
+	}
+}
+
+func TestHandlerListProduct_400_InvalidSort(t *testing.T) {
+	h := NewHandler(&mockService{})
+
+	r := httptest.NewRequest("GET", "/products?sort=invalid", nil)
+	w := httptest.NewRecorder()
+
+	h.ListProduct(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestHandlerListProduct_400_LimitTooHigh(t *testing.T) {
+	h := NewHandler(&mockService{})
+
+	r := httptest.NewRequest("GET", "/products?limit=200", nil)
+	w := httptest.NewRecorder()
+
+	h.ListProduct(w, r)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected status 400, got %d", w.Code)
 	}
 }
 
 func TestHandlerListProduct_500(t *testing.T) {
 	svc := &mockService{
-		listProductsFn: func(ctx context.Context) ([]repo.ListProductsRow, error) {
-			return nil, errors.New("db error")
+		listProductsPaginatedFn: func(ctx context.Context, params listProductsParams) (paginatedProducts, error) {
+			return paginatedProducts{}, errors.New("db error")
 		},
 	}
 	h := NewHandler(svc)

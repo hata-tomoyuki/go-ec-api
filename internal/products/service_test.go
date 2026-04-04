@@ -8,6 +8,57 @@ import (
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 )
 
+// ---------- validate() テスト ----------
+
+func TestListProductsParams_Validate_Defaults(t *testing.T) {
+	p := listProductsParams{}
+	if err := p.validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.Page != 1 {
+		t.Errorf("expected Page=1, got %d", p.Page)
+	}
+	if p.Limit != 20 {
+		t.Errorf("expected Limit=20, got %d", p.Limit)
+	}
+	if p.Sort != "created_at_desc" {
+		t.Errorf("expected Sort='created_at_desc', got '%s'", p.Sort)
+	}
+}
+
+func TestListProductsParams_Validate_InvalidSort(t *testing.T) {
+	p := listProductsParams{Sort: "invalid_sort"}
+	err := p.validate()
+	if !errors.Is(err, ErrInvalidSort) {
+		t.Errorf("expected ErrInvalidSort, got %v", err)
+	}
+}
+
+func TestListProductsParams_Validate_LimitTooHigh(t *testing.T) {
+	p := listProductsParams{Limit: 101}
+	err := p.validate()
+	if !errors.Is(err, ErrInvalidLimit) {
+		t.Errorf("expected ErrInvalidLimit, got %v", err)
+	}
+}
+
+func TestListProductsParams_Validate_LimitBoundary(t *testing.T) {
+	p := listProductsParams{Limit: 100}
+	if err := p.validate(); err != nil {
+		t.Fatalf("limit=100 should be valid, got: %v", err)
+	}
+}
+
+func TestListProductsParams_Validate_AllSortOptions(t *testing.T) {
+	validSorts := []string{"created_at_desc", "created_at_asc", "price_desc", "price_asc", "name_asc", "name_desc"}
+	for _, sort := range validSorts {
+		p := listProductsParams{Sort: sort}
+		if err := p.validate(); err != nil {
+			t.Errorf("sort=%q should be valid, got: %v", sort, err)
+		}
+	}
+}
+
 func TestListProducts(t *testing.T) {
 	mock := &mockQuerier{
 		listProductsFn: func(ctx context.Context) ([]repo.ListProductsRow, error) {
@@ -18,7 +69,7 @@ func TestListProducts(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, &mockDBTX{})
 	products, err := svc.ListProducts(context.Background())
 
 	if err != nil {
@@ -39,7 +90,7 @@ func TestListProducts_Error(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, &mockDBTX{})
 	_, err := svc.ListProducts(context.Background())
 
 	if err == nil {
@@ -54,7 +105,7 @@ func TestFindProductById(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, &mockDBTX{})
 	product, err := svc.FindProductById(context.Background(), 1)
 
 	if err != nil {
@@ -79,7 +130,7 @@ func TestCreateProduct(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, &mockDBTX{})
 	product, err := svc.CreateProduct(context.Background(), createProductParams{
 		Name:         "New Jacket",
 		PriceInCents: 8000,
@@ -108,7 +159,7 @@ func TestUpdateProduct(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, &mockDBTX{})
 	product, err := svc.UpdateProduct(context.Background(), updateProductParams{
 		ID:           1,
 		Name:         "Updated Jacket",
@@ -131,7 +182,7 @@ func TestDeleteProduct(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, &mockDBTX{})
 	err := svc.DeleteProduct(context.Background(), 1)
 
 	if err != nil {
@@ -146,7 +197,7 @@ func TestDeleteProduct_Error(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, &mockDBTX{})
 	err := svc.DeleteProduct(context.Background(), 999)
 
 	if err == nil {
