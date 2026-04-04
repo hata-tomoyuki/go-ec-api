@@ -81,6 +81,27 @@ func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 	json.Write(w, http.StatusOK, rows)
 }
 
+func (h *handler) FindOrderByIdAdmin(w http.ResponseWriter, r *http.Request) {
+	orderID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		json.WriteError(w, http.StatusBadRequest, "Invalid order ID")
+		return
+	}
+
+	rows, err := h.service.FindOrderById(r.Context(), orderID)
+	if err != nil {
+		if errors.Is(err, ErrOrderNotFound) {
+			json.WriteError(w, http.StatusNotFound, err.Error())
+			return
+		}
+		slog.Error("failed to find order", "error", err, "order_id", orderID)
+		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
+		return
+	}
+
+	json.Write(w, http.StatusOK, rows)
+}
+
 func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 	customerID, err := auth.UserID(r)
 	if err != nil {

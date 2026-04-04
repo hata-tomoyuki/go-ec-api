@@ -100,6 +100,7 @@ func (app *application) mount() http.Handler {
 			r.Delete("/categories/{id}/products/{productId}", categoryHandler.RemoveProductFromCategory)
 
 			r.Get("/admin/orders", ordersHandler.ListAllOrders)
+			r.Get("/admin/orders/{id}", ordersHandler.FindOrderByIdAdmin)
 			r.Put("/admin/orders/{id}/status", ordersHandler.UpdateOrderStatus)
 		})
 	})
