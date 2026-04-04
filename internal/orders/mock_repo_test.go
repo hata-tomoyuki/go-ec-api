@@ -11,7 +11,7 @@ import (
 type mockQuerier struct {
 	listAllOrdersFn          func(ctx context.Context) ([]repo.ListAllOrdersRow, error)
 	listOrdersByCustomerIDFn func(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error)
-	findOrderByIdFn          func(ctx context.Context, id int64) (repo.FindOrderByIdRow, error)
+	findOrderByIdFn          func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error)
 	cancelOrderFn            func(ctx context.Context, id int64) (repo.Order, error)
 	updateOrderStatusFn      func(ctx context.Context, arg repo.UpdateOrderStatusParams) (repo.Order, error)
 }
@@ -22,7 +22,7 @@ func (m *mockQuerier) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRo
 func (m *mockQuerier) ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error) {
 	return m.listOrdersByCustomerIDFn(ctx, customerID)
 }
-func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
+func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
 	return m.findOrderByIdFn(ctx, id)
 }
 func (m *mockQuerier) CancelOrder(ctx context.Context, id int64) (repo.Order, error) {
@@ -156,15 +156,17 @@ func (m *mockQuerier) UpdateUserPassword(ctx context.Context, arg repo.UpdateUse
 }
 
 // テスト用ヘルパー
-func newTestOrderHelper(id int64, customerID int64, status repo.Status) repo.FindOrderByIdRow {
-	return repo.FindOrderByIdRow{
-		ID:           id,
-		CustomerID:   customerID,
-		Status:       status,
-		CreatedAt:    pgtype.Timestamptz{Valid: true},
-		UpdatedAt:    pgtype.Timestamptz{Valid: true},
-		ProductID:    1,
-		Quantity:     2,
-		PriceInCents: 1000,
+func newTestOrderHelper(id int64, customerID int64, status repo.Status) []repo.FindOrderByIdRow {
+	return []repo.FindOrderByIdRow{
+		{
+			ID:           id,
+			CustomerID:   customerID,
+			Status:       status,
+			CreatedAt:    pgtype.Timestamptz{Valid: true},
+			UpdatedAt:    pgtype.Timestamptz{Valid: true},
+			ProductID:    1,
+			Quantity:     2,
+			PriceInCents: 1000,
+		},
 	}
 }

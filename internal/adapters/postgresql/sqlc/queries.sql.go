@@ -479,20 +479,33 @@ type FindOrderByIdRow struct {
 	PriceInCents int32              `json:"price_in_cents"`
 }
 
-func (q *Queries) FindOrderById(ctx context.Context, id int64) (FindOrderByIdRow, error) {
-	row := q.db.QueryRow(ctx, findOrderById, id)
-	var i FindOrderByIdRow
-	err := row.Scan(
-		&i.ID,
-		&i.CustomerID,
-		&i.Status,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ProductID,
-		&i.Quantity,
-		&i.PriceInCents,
-	)
-	return i, err
+func (q *Queries) FindOrderById(ctx context.Context, id int64) ([]FindOrderByIdRow, error) {
+	rows, err := q.db.Query(ctx, findOrderById, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FindOrderByIdRow
+	for rows.Next() {
+		var i FindOrderByIdRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CustomerID,
+			&i.Status,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.ProductID,
+			&i.Quantity,
+			&i.PriceInCents,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const findProductById = `-- name: FindProductById :one

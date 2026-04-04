@@ -31,7 +31,7 @@ type Querier interface {
 	FindCartByUserId(ctx context.Context, userID int64) (Cart, error)
 	FindCartItemById(ctx context.Context, id int64) (CartItem, error)
 	FindCategoryById(ctx context.Context, id int64) (FindCategoryByIdRow, error)
-	FindOrderById(ctx context.Context, id int64) (FindOrderByIdRow, error)
+	FindOrderById(ctx context.Context, id int64) ([]FindOrderByIdRow, error)
 	FindProductById(ctx context.Context, id int64) (FindProductByIdRow, error)
 	FindUserByEmail(ctx context.Context, email string) (User, error)
 	FindUserById(ctx context.Context, id int64) (User, error)

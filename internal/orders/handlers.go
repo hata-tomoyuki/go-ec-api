@@ -62,7 +62,7 @@ func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order, err := h.service.FindOrderById(r.Context(), orderID)
+	rows, err := h.service.FindOrderById(r.Context(), orderID)
 	if err != nil {
 		if errors.Is(err, ErrOrderNotFound) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
@@ -73,12 +73,12 @@ func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if order.CustomerID != customerID {
+	if rows[0].CustomerID != customerID {
 		json.WriteError(w, http.StatusForbidden, ErrOrderForbidden.Error())
 		return
 	}
 
-	json.Write(w, http.StatusOK, order)
+	json.Write(w, http.StatusOK, rows)
 }
 
 func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {

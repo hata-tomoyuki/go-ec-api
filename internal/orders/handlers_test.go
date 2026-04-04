@@ -46,7 +46,7 @@ func withChiURLParam(r *http.Request, key, value string) *http.Request {
 type mockService struct {
 	listAllOrdersFn          func(ctx context.Context) ([]repo.ListAllOrdersRow, error)
 	listOrdersByCustomerIDFn func(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error)
-	findOrderByIdFn          func(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error)
+	findOrderByIdFn          func(ctx context.Context, orderID int64) ([]repo.FindOrderByIdRow, error)
 	placeOrderFn             func(ctx context.Context, tempOrder createOrderParams) (repo.Order, error)
 	cancelOrderFn            func(ctx context.Context, orderID int64, customerID int64) (repo.FindOrderByIdRow, error)
 	updateOrderStatusFn      func(ctx context.Context, orderID int64, status string) (repo.FindOrderByIdRow, error)
@@ -58,7 +58,7 @@ func (m *mockService) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRo
 func (m *mockService) ListOrdersByCustomerID(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error) {
 	return m.listOrdersByCustomerIDFn(ctx, customerID)
 }
-func (m *mockService) FindOrderById(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
+func (m *mockService) FindOrderById(ctx context.Context, orderID int64) ([]repo.FindOrderByIdRow, error) {
 	return m.findOrderByIdFn(ctx, orderID)
 }
 func (m *mockService) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo.Order, error) {
@@ -73,16 +73,18 @@ func (m *mockService) UpdateOrderStatus(ctx context.Context, orderID int64, stat
 
 // ---------- helpers ----------
 
-func newTestOrderRow(id int64, customerID int64, status repo.Status) repo.FindOrderByIdRow {
-	return repo.FindOrderByIdRow{
-		ID:           id,
-		CustomerID:   customerID,
-		Status:       status,
-		CreatedAt:    pgtype.Timestamptz{Valid: true},
-		UpdatedAt:    pgtype.Timestamptz{Valid: true},
-		ProductID:    1,
-		Quantity:     2,
-		PriceInCents: 1000,
+func newTestOrderRow(id int64, customerID int64, status repo.Status) []repo.FindOrderByIdRow {
+	return []repo.FindOrderByIdRow{
+		{
+			ID:           id,
+			CustomerID:   customerID,
+			Status:       status,
+			CreatedAt:    pgtype.Timestamptz{Valid: true},
+			UpdatedAt:    pgtype.Timestamptz{Valid: true},
+			ProductID:    1,
+			Quantity:     2,
+			PriceInCents: 1000,
+		},
 	}
 }
 
@@ -129,7 +131,7 @@ func TestHandlerListOrdersByCustomerID_200(t *testing.T) {
 
 func TestHandlerFindOrderById_200(t *testing.T) {
 	svc := &mockService{
-		findOrderByIdFn: func(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
+		findOrderByIdFn: func(ctx context.Context, orderID int64) ([]repo.FindOrderByIdRow, error) {
 			return newTestOrderRow(orderID, 10, repo.StatusPending), nil
 		},
 	}
@@ -148,8 +150,8 @@ func TestHandlerFindOrderById_200(t *testing.T) {
 
 func TestHandlerFindOrderById_404(t *testing.T) {
 	svc := &mockService{
-		findOrderByIdFn: func(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
-			return repo.FindOrderByIdRow{}, ErrOrderNotFound
+		findOrderByIdFn: func(ctx context.Context, orderID int64) ([]repo.FindOrderByIdRow, error) {
+			return nil, ErrOrderNotFound
 		},
 	}
 	h := NewHandler(svc)
@@ -167,7 +169,7 @@ func TestHandlerFindOrderById_404(t *testing.T) {
 
 func TestHandlerFindOrderById_403(t *testing.T) {
 	svc := &mockService{
-		findOrderByIdFn: func(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
+		findOrderByIdFn: func(ctx context.Context, orderID int64) ([]repo.FindOrderByIdRow, error) {
 			// 別のユーザー(99)の注文を返す
 			return newTestOrderRow(orderID, 99, repo.StatusPending), nil
 		},
@@ -281,7 +283,7 @@ func TestHandlerPlaceOrder_400_InvalidJSON(t *testing.T) {
 func TestHandlerCancelOrder_204(t *testing.T) {
 	svc := &mockService{
 		cancelOrderFn: func(ctx context.Context, orderID int64, customerID int64) (repo.FindOrderByIdRow, error) {
-			return newTestOrderRow(orderID, customerID, repo.StatusPending), nil
+			return newTestOrderRow(orderID, customerID, repo.StatusPending)[0], nil
 		},
 	}
 	h := NewHandler(svc)
@@ -357,7 +359,7 @@ func TestHandlerCancelOrder_400_NotPending(t *testing.T) {
 func TestHandlerUpdateOrderStatus_200(t *testing.T) {
 	svc := &mockService{
 		updateOrderStatusFn: func(ctx context.Context, orderID int64, status string) (repo.FindOrderByIdRow, error) {
-			return newTestOrderRow(orderID, 10, repo.Status(status)), nil
+			return newTestOrderRow(orderID, 10, repo.Status(status))[0], nil
 		},
 	}
 	h := NewHandler(svc)

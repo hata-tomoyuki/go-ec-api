@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
-	"github.com/jackc/pgx/v5"
 )
 
 // mockDB は pgBeginner interface のモック（トランザクション不要のテスト用）
@@ -56,25 +55,25 @@ func TestServiceListAllOrders(t *testing.T) {
 
 func TestServiceFindOrderById_Success(t *testing.T) {
 	mock := &mockQuerier{
-		findOrderByIdFn: func(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
+		findOrderByIdFn: func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
 			return newTestOrderHelper(id, 10, repo.StatusPending), nil
 		},
 	}
 	svc := &svc{q: mock}
 
-	order, err := svc.FindOrderById(context.Background(), 1)
+	rows, err := svc.FindOrderById(context.Background(), 1)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if order.ID != 1 {
-		t.Errorf("expected id=1, got %d", order.ID)
+	if rows[0].ID != 1 {
+		t.Errorf("expected id=1, got %d", rows[0].ID)
 	}
 }
 
 func TestServiceFindOrderById_NotFound(t *testing.T) {
 	mock := &mockQuerier{
-		findOrderByIdFn: func(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
-			return repo.FindOrderByIdRow{}, pgx.ErrNoRows
+		findOrderByIdFn: func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
+			return nil, nil
 		},
 	}
 	svc := &svc{q: mock}
@@ -87,7 +86,7 @@ func TestServiceFindOrderById_NotFound(t *testing.T) {
 
 func TestServiceCancelOrder_Success(t *testing.T) {
 	mock := &mockQuerier{
-		findOrderByIdFn: func(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
+		findOrderByIdFn: func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
 			return newTestOrderHelper(id, 10, repo.StatusPending), nil
 		},
 		cancelOrderFn: func(ctx context.Context, id int64) (repo.Order, error) {
@@ -107,8 +106,8 @@ func TestServiceCancelOrder_Success(t *testing.T) {
 
 func TestServiceCancelOrder_NotFound(t *testing.T) {
 	mock := &mockQuerier{
-		findOrderByIdFn: func(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
-			return repo.FindOrderByIdRow{}, pgx.ErrNoRows
+		findOrderByIdFn: func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
+			return nil, nil
 		},
 	}
 	svc := &svc{q: mock}
@@ -121,7 +120,7 @@ func TestServiceCancelOrder_NotFound(t *testing.T) {
 
 func TestServiceCancelOrder_Forbidden(t *testing.T) {
 	mock := &mockQuerier{
-		findOrderByIdFn: func(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
+		findOrderByIdFn: func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
 			return newTestOrderHelper(id, 99, repo.StatusPending), nil // customerID=99
 		},
 	}
@@ -135,7 +134,7 @@ func TestServiceCancelOrder_Forbidden(t *testing.T) {
 
 func TestServiceCancelOrder_NotPending(t *testing.T) {
 	mock := &mockQuerier{
-		findOrderByIdFn: func(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
+		findOrderByIdFn: func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
 			return newTestOrderHelper(id, 10, repo.StatusCompleted), nil // already completed
 		},
 	}
@@ -158,8 +157,8 @@ func TestServiceUpdateOrderStatus_InvalidStatus(t *testing.T) {
 
 func TestServiceUpdateOrderStatus_NotFound(t *testing.T) {
 	mock := &mockQuerier{
-		findOrderByIdFn: func(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
-			return repo.FindOrderByIdRow{}, pgx.ErrNoRows
+		findOrderByIdFn: func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
+			return nil, nil
 		},
 	}
 	svc := &svc{q: mock}
@@ -173,7 +172,7 @@ func TestServiceUpdateOrderStatus_NotFound(t *testing.T) {
 func TestServiceUpdateOrderStatus_Success(t *testing.T) {
 	callCount := 0
 	mock := &mockQuerier{
-		findOrderByIdFn: func(ctx context.Context, id int64) (repo.FindOrderByIdRow, error) {
+		findOrderByIdFn: func(ctx context.Context, id int64) ([]repo.FindOrderByIdRow, error) {
 			callCount++
 			return newTestOrderHelper(id, 10, repo.StatusCompleted), nil
 		},

@@ -40,15 +40,15 @@ func (s *svc) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRow, error
 	return s.q.ListAllOrders(ctx)
 }
 
-func (s *svc) FindOrderById(ctx context.Context, orderID int64) (repo.FindOrderByIdRow, error) {
-	order, err := s.q.FindOrderById(ctx, orderID)
+func (s *svc) FindOrderById(ctx context.Context, orderID int64) ([]repo.FindOrderByIdRow, error) {
+	rows, err := s.q.FindOrderById(ctx, orderID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return repo.FindOrderByIdRow{}, ErrOrderNotFound
-		}
-		return repo.FindOrderByIdRow{}, err
+		return nil, err
 	}
-	return order, nil
+	if len(rows) == 0 {
+		return nil, ErrOrderNotFound
+	}
+	return rows, nil
 }
 
 func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo.Order, error) {
@@ -105,14 +105,15 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 }
 
 func (s *svc) CancelOrder(ctx context.Context, orderID int64, customerID int64) (repo.FindOrderByIdRow, error) {
-	order, err := s.q.FindOrderById(ctx, orderID)
+	rows, err := s.q.FindOrderById(ctx, orderID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return repo.FindOrderByIdRow{}, ErrOrderNotFound
-		}
 		return repo.FindOrderByIdRow{}, err
 	}
+	if len(rows) == 0 {
+		return repo.FindOrderByIdRow{}, ErrOrderNotFound
+	}
 
+	order := rows[0]
 	if order.CustomerID != customerID {
 		return repo.FindOrderByIdRow{}, ErrOrderForbidden
 	}
@@ -142,12 +143,12 @@ func (s *svc) UpdateOrderStatus(ctx context.Context, orderID int64, status strin
 		return repo.FindOrderByIdRow{}, ErrInvalidStatus
 	}
 
-	_, err := s.q.FindOrderById(ctx, orderID)
+	rows, err := s.q.FindOrderById(ctx, orderID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return repo.FindOrderByIdRow{}, ErrOrderNotFound
-		}
 		return repo.FindOrderByIdRow{}, err
+	}
+	if len(rows) == 0 {
+		return repo.FindOrderByIdRow{}, ErrOrderNotFound
 	}
 
 	_, err = s.q.UpdateOrderStatus(ctx, repo.UpdateOrderStatusParams{
@@ -158,5 +159,12 @@ func (s *svc) UpdateOrderStatus(ctx context.Context, orderID int64, status strin
 		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to update order status: %w", err)
 	}
 
-	return s.q.FindOrderById(ctx, orderID)
+	updatedRows, err := s.q.FindOrderById(ctx, orderID)
+	if err != nil {
+		return repo.FindOrderByIdRow{}, err
+	}
+	if len(updatedRows) == 0 {
+		return repo.FindOrderByIdRow{}, ErrOrderNotFound
+	}
+	return updatedRows[0], nil
 }

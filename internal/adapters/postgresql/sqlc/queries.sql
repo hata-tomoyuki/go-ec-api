@@ -128,7 +128,7 @@ FROM
 JOIN
     order_items oi ON o.id = oi.order_id;
 
--- name: FindOrderById :one
+-- name: FindOrderById :many
 SELECT
     o.id,
     o.customer_id,
