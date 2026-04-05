@@ -79,7 +79,7 @@ func (m *mockQuerier) CreateUser(ctx context.Context, arg repo.CreateUserParams)
 func (m *mockQuerier) DecrementProductQuantity(ctx context.Context, arg repo.DecrementProductQuantityParams) (repo.Product, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) DeleteAddress(ctx context.Context, id int32) error {
+func (m *mockQuerier) DeleteAddress(ctx context.Context, arg repo.DeleteAddressParams) (repo.Address, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) DeleteExpiredRefreshTokens(ctx context.Context) error {

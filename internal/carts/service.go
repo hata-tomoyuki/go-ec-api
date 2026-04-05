@@ -29,6 +29,18 @@ func (s *svc) AddItemToCart(ctx context.Context, userID int64, productID int64, 
 		return repo.CartItem{}, err
 	}
 
+	product, err := s.repo.FindProductById(ctx, productID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.CartItem{}, ErrProductNotFound
+		}
+		return repo.CartItem{}, err
+	}
+
+	if product.Quantity < int32(quantity) {
+		return repo.CartItem{}, ErrInsufficientStock
+	}
+
 	return s.repo.AddItemToCart(ctx, repo.AddItemToCartParams{
 		CartID:    cart.ID,
 		ProductID: productID,

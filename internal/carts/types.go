@@ -8,8 +8,10 @@ import (
 )
 
 var (
-	ErrCartNotFound  = errors.New("cart not found")
-	ErrCartForbidden = errors.New("you do not have permission to access this cart")
+	ErrCartNotFound      = errors.New("cart not found")
+	ErrCartForbidden     = errors.New("you do not have permission to access this cart")
+	ErrProductNotFound   = errors.New("product not found")
+	ErrInsufficientStock = errors.New("insufficient stock")
 )
 
 type Service interface {

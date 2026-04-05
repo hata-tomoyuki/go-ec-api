@@ -96,7 +96,7 @@ func (m *mockQuerier) CreateProduct(ctx context.Context, arg repo.CreateProductP
 func (m *mockQuerier) DecrementProductQuantity(ctx context.Context, arg repo.DecrementProductQuantityParams) (repo.Product, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) DeleteAddress(ctx context.Context, id int32) error {
+func (m *mockQuerier) DeleteAddress(ctx context.Context, arg repo.DeleteAddressParams) (repo.Address, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) DeleteCategory(ctx context.Context, id int64) (repo.Category, error) {

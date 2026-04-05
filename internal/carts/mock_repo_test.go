@@ -17,6 +17,7 @@ type mockQuerier struct {
 	updateCartItemQuantityFn func(ctx context.Context, arg repo.UpdateCartItemQuantityParams) (repo.CartItem, error)
 	removeItemFromCartFn     func(ctx context.Context, id int64) (repo.CartItem, error)
 	clearCartFn              func(ctx context.Context, userID int64) error
+	findProductByIdFn        func(ctx context.Context, id int64) (repo.FindProductByIdRow, error)
 }
 
 func (m *mockQuerier) FindCartByUserId(ctx context.Context, userID int64) (repo.Cart, error) {
@@ -76,7 +77,7 @@ func (m *mockQuerier) CreateUser(ctx context.Context, arg repo.CreateUserParams)
 func (m *mockQuerier) DecrementProductQuantity(ctx context.Context, arg repo.DecrementProductQuantityParams) (repo.Product, error) {
 	panic("not implemented")
 }
-func (m *mockQuerier) DeleteAddress(ctx context.Context, id int32) error {
+func (m *mockQuerier) DeleteAddress(ctx context.Context, arg repo.DeleteAddressParams) (repo.Address, error) {
 	panic("not implemented")
 }
 func (m *mockQuerier) DeleteCategory(ctx context.Context, id int64) (repo.Category, error) {
@@ -104,7 +105,10 @@ func (m *mockQuerier) FindOrderById(ctx context.Context, id int64) ([]repo.FindO
 	panic("not implemented")
 }
 func (m *mockQuerier) FindProductById(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
-	panic("not implemented")
+	if m.findProductByIdFn != nil {
+		return m.findProductByIdFn(ctx, id)
+	}
+	return repo.FindProductByIdRow{Quantity: 100}, nil
 }
 func (m *mockQuerier) FindUserByEmail(ctx context.Context, email string) (repo.User, error) {
 	panic("not implemented")

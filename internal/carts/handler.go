@@ -57,12 +57,17 @@ func (h *handler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 
 	addedItem, err := h.service.AddItemToCart(r.Context(), userID, params.ProductID, params.Quantity)
 	if err != nil {
-		if errors.Is(err, ErrCartNotFound) {
+		switch {
+		case errors.Is(err, ErrCartNotFound):
 			json.WriteError(w, http.StatusNotFound, err.Error())
-			return
+		case errors.Is(err, ErrProductNotFound):
+			json.WriteError(w, http.StatusNotFound, err.Error())
+		case errors.Is(err, ErrInsufficientStock):
+			json.WriteError(w, http.StatusConflict, err.Error())
+		default:
+			slog.Error("failed to add item to cart", "error", err)
+			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
-		slog.Error("failed to add item to cart", "error", err)
-		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
