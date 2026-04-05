@@ -7,7 +7,13 @@ import (
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var tracer = otel.Tracer("orders")
+
 
 var (
 	ErrorProductNotFound = errors.New("product not found")
@@ -126,6 +132,15 @@ func (s *svc) FindOrderById(ctx context.Context, orderID int64) ([]repo.FindOrde
 }
 
 func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo.Order, error) {
+	ctx, span := tracer.Start(ctx, "orders.PlaceOrder")
+
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.Int64("customer_id", tempOrder.CustomerID),
+		attribute.Int("item_count", len(tempOrder.Items)),
+	)
+
 	if tempOrder.CustomerID == 0 {
 		return repo.Order{}, fmt.Errorf("customer ID is required")
 	}
@@ -135,12 +150,16 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 
 	for _, item := range tempOrder.Items {
 		if err := item.validate(); err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return repo.Order{}, err
 		}
 	}
 
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return repo.Order{}, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
@@ -148,6 +167,8 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 
 	order, err := qtx.CreateOrder(ctx, tempOrder.CustomerID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return repo.Order{}, fmt.Errorf("failed to create order: %w", err)
 	}
 
@@ -158,8 +179,12 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 		})
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
+				span.RecordError(err)
+				span.SetStatus(codes.Error, err.Error())
 				return repo.Order{}, ErrorProductNoStock
 			}
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return repo.Order{}, fmt.Errorf("failed to decrement stock: %w", err)
 		}
 
@@ -170,22 +195,38 @@ func (s *svc) PlaceOrder(ctx context.Context, tempOrder createOrderParams) (repo
 			PriceInCents: product.PriceInCents,
 		})
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return repo.Order{}, fmt.Errorf("failed to create order item: %w", err)
 		}
 	}
 	if err := tx.Commit(ctx); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return repo.Order{}, fmt.Errorf("failed to commit transaction: %w", err)
 	}
-
+	span.SetAttributes(attribute.Int64("order_id", order.ID))
 	return order, nil
 }
 
 func (s *svc) CancelOrder(ctx context.Context, orderID int64, customerID int64) (repo.FindOrderByIdRow, error) {
+	ctx, span := tracer.Start(ctx, "orders.CancelOrder")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.Int64("order_id", orderID),
+		attribute.Int64("customer_id", customerID),
+	)
+
 	rows, err := s.q.FindOrderById(ctx, orderID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return repo.FindOrderByIdRow{}, err
 	}
 	if len(rows) == 0 {
+		span.RecordError(ErrOrderNotFound)
+		span.SetStatus(codes.Error, ErrOrderNotFound.Error())
 		return repo.FindOrderByIdRow{}, ErrOrderNotFound
 	}
 
@@ -200,6 +241,8 @@ func (s *svc) CancelOrder(ctx context.Context, orderID int64, customerID int64) 
 
 	tx, err := s.db.Begin(ctx)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer tx.Rollback(ctx)
@@ -207,6 +250,8 @@ func (s *svc) CancelOrder(ctx context.Context, orderID int64, customerID int64) 
 
 	_, err = qtx.CancelOrder(ctx, orderID)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to cancel order: %w", err)
 	}
 
@@ -216,10 +261,14 @@ func (s *svc) CancelOrder(ctx context.Context, orderID int64, customerID int64) 
 			Quantity: item.Quantity,
 		})
 		if err != nil {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return repo.FindOrderByIdRow{}, fmt.Errorf("failed to restore stock: %w", err)
 		}
 	}
 	if err := tx.Commit(ctx); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return repo.FindOrderByIdRow{}, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 

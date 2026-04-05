@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/jwtauth/v5"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 func (app *application) mount() http.Handler {
@@ -111,5 +112,5 @@ func (app *application) mount() http.Handler {
 		})
 	})
 
-	return r
+	return otelhttp.NewHandler(r, "ecommerce-http")
 }

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"example.com/ecommerce/internal/env"
+	"example.com/ecommerce/internal/tracing"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -29,7 +30,23 @@ func main() {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
-	pool, err := pgxpool.New(ctx, cfg.db.dsn)
+	// --- OpenTelemetry ---
+	otlpEndpoint := env.GetString("OTEL_EXPORTER_OTLP_ENDPOINT", "")
+	shutdownTracer, err := tracing.InitTracer(ctx, "ecommerce", otlpEndpoint)
+	if err != nil {
+		slog.Error("failed to init tracer", "error", err)
+		os.Exit(1)
+	}
+	defer shutdownTracer(ctx)
+
+	// --- Database pool with query tracing ---
+	poolCfg, err := pgxpool.ParseConfig(cfg.db.dsn)
+	if err != nil {
+		panic(err)
+	}
+	poolCfg.ConnConfig.Tracer = tracing.NewPgxTracer()
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolCfg)
 	if err != nil {
 		panic(err)
 	}
