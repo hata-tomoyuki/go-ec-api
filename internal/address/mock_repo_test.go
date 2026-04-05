@@ -15,7 +15,7 @@ type mockQuerier struct {
 	listAddressesByUserIdFn func(ctx context.Context, userID int64) ([]repo.Address, error)
 	createAddressFn        func(ctx context.Context, arg repo.CreateAddressParams) (repo.Address, error)
 	updateAddressFn        func(ctx context.Context, arg repo.UpdateAddressParams) (repo.Address, error)
-	deleteAddressFn        func(ctx context.Context, id int32) error
+	deleteAddressFn        func(ctx context.Context, arg repo.DeleteAddressParams) (repo.Address, error)
 }
 
 func (m *mockQuerier) FindAddressById(ctx context.Context, id int32) (repo.Address, error) {
@@ -34,8 +34,8 @@ func (m *mockQuerier) UpdateAddress(ctx context.Context, arg repo.UpdateAddressP
 	return m.updateAddressFn(ctx, arg)
 }
 
-func (m *mockQuerier) DeleteAddress(ctx context.Context, id int32) error {
-	return m.deleteAddressFn(ctx, id)
+func (m *mockQuerier) DeleteAddress(ctx context.Context, arg repo.DeleteAddressParams) (repo.Address, error) {
+	return m.deleteAddressFn(ctx, arg)
 }
 
 // --- 以下は Querier interface を満たすためのスタブ ---

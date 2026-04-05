@@ -119,13 +119,10 @@ func TestCreateAddress(t *testing.T) {
 
 func TestUpdateAddress_Success(t *testing.T) {
 	mock := &mockQuerier{
-		findAddressByIdFn: func(ctx context.Context, id int32) (repo.Address, error) {
-			return newTestAddress(1, 10), nil // 自分の住所
-		},
 		updateAddressFn: func(ctx context.Context, arg repo.UpdateAddressParams) (repo.Address, error) {
 			return repo.Address{
 				ID:      arg.ID,
-				UserID:  10,
+				UserID:  arg.UserID,
 				Street:  arg.Street,
 				City:    arg.City,
 				State:   arg.State,
@@ -152,9 +149,10 @@ func TestUpdateAddress_Success(t *testing.T) {
 	}
 }
 
-func TestUpdateAddress_NotFound(t *testing.T) {
+func TestUpdateAddress_NotFoundOrForbidden(t *testing.T) {
+	// アトミック化により、存在しない or 他人の住所は区別されず ErrAddressNotFound になる
 	mock := &mockQuerier{
-		findAddressByIdFn: func(ctx context.Context, id int32) (repo.Address, error) {
+		updateAddressFn: func(ctx context.Context, arg repo.UpdateAddressParams) (repo.Address, error) {
 			return repo.Address{}, pgx.ErrNoRows
 		},
 	}
@@ -169,30 +167,10 @@ func TestUpdateAddress_NotFound(t *testing.T) {
 	}
 }
 
-func TestUpdateAddress_Forbidden(t *testing.T) {
-	mock := &mockQuerier{
-		findAddressByIdFn: func(ctx context.Context, id int32) (repo.Address, error) {
-			return newTestAddress(1, 99), nil // 他人の住所
-		},
-	}
-
-	svc := NewService(mock)
-	_, err := svc.UpdateAddress(context.Background(), 10, 1, createAddressParams{
-		Street: "x", City: "x", State: "x", ZipCode: "x", Country: "x",
-	})
-
-	if !errors.Is(err, ErrForbidden) {
-		t.Fatalf("expected ErrForbidden, got %v", err)
-	}
-}
-
 func TestDeleteAddress_Success(t *testing.T) {
 	mock := &mockQuerier{
-		findAddressByIdFn: func(ctx context.Context, id int32) (repo.Address, error) {
-			return newTestAddress(1, 10), nil
-		},
-		deleteAddressFn: func(ctx context.Context, id int32) error {
-			return nil
+		deleteAddressFn: func(ctx context.Context, arg repo.DeleteAddressParams) (repo.Address, error) {
+			return newTestAddress(arg.ID, arg.UserID), nil
 		},
 	}
 
@@ -204,9 +182,10 @@ func TestDeleteAddress_Success(t *testing.T) {
 	}
 }
 
-func TestDeleteAddress_NotFound(t *testing.T) {
+func TestDeleteAddress_NotFoundOrForbidden(t *testing.T) {
+	// アトミック化により、存在しない or 他人の住所は区別されず ErrAddressNotFound になる
 	mock := &mockQuerier{
-		findAddressByIdFn: func(ctx context.Context, id int32) (repo.Address, error) {
+		deleteAddressFn: func(ctx context.Context, arg repo.DeleteAddressParams) (repo.Address, error) {
 			return repo.Address{}, pgx.ErrNoRows
 		},
 	}
@@ -216,20 +195,5 @@ func TestDeleteAddress_NotFound(t *testing.T) {
 
 	if !errors.Is(err, ErrAddressNotFound) {
 		t.Fatalf("expected ErrAddressNotFound, got %v", err)
-	}
-}
-
-func TestDeleteAddress_Forbidden(t *testing.T) {
-	mock := &mockQuerier{
-		findAddressByIdFn: func(ctx context.Context, id int32) (repo.Address, error) {
-			return newTestAddress(1, 99), nil // 他人の住所
-		},
-	}
-
-	svc := NewService(mock)
-	err := svc.DeleteAddress(context.Background(), 10, 1)
-
-	if !errors.Is(err, ErrForbidden) {
-		t.Fatalf("expected ErrForbidden, got %v", err)
 	}
 }

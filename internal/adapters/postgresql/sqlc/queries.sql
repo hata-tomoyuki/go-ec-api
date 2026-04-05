@@ -265,9 +265,10 @@ INSERT INTO addresses (user_id, street, city, state, zip_code, country) VALUES (
 
 -- name: UpdateAddress :one
 UPDATE addresses
-SET street = $2, city = $3, state = $4, zip_code = $5, country = $6, updated_at = now()
-WHERE id = $1
+SET street = $3, city = $4, state = $5, zip_code = $6, country = $7, updated_at = now()
+WHERE id = $1 AND user_id = $2
 RETURNING *;
 
--- name: DeleteAddress :exec
-DELETE FROM addresses WHERE id = $1;
+-- name: DeleteAddress :one
+DELETE FROM addresses WHERE id = $1 AND user_id = $2
+RETURNING *;

@@ -48,42 +48,34 @@ func (s *svc) CreateAddress(ctx context.Context, userId int64, params createAddr
 }
 
 func (s *svc) UpdateAddress(ctx context.Context, userId int64, addressId int32, params createAddressParams) (repo.Address, error) {
-	// 所有者チェック
-	addr, err := s.repo.FindAddressById(ctx, addressId)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return repo.Address{}, ErrAddressNotFound
-		}
-		return repo.Address{}, err
-	}
-
-	if addr.UserID != userId {
-		return repo.Address{}, ErrForbidden
-	}
-
-	return s.repo.UpdateAddress(ctx, repo.UpdateAddressParams{
+	addr, err := s.repo.UpdateAddress(ctx, repo.UpdateAddressParams{
 		ID:      addressId,
+		UserID:  userId,
 		Street:  params.Street,
 		City:    params.City,
 		State:   params.State,
 		ZipCode: params.ZipCode,
 		Country: params.Country,
 	})
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return repo.Address{}, ErrAddressNotFound
+		}
+		return repo.Address{}, err
+	}
+	return addr, nil
 }
 
 func (s *svc) DeleteAddress(ctx context.Context, userId int64, addressId int32) error {
-	// 所有者チェック
-	addr, err := s.repo.FindAddressById(ctx, addressId)
+	_, err := s.repo.DeleteAddress(ctx, repo.DeleteAddressParams{
+		ID:     addressId,
+		UserID: userId,
+	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrAddressNotFound
 		}
 		return err
 	}
-
-	if addr.UserID != userId {
-		return ErrForbidden
-	}
-
-	return s.repo.DeleteAddress(ctx, addressId)
+	return nil
 }

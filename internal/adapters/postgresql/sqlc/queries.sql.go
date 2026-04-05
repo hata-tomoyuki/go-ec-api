@@ -192,60 +192,6 @@ func (q *Queries) CreateOrder(ctx context.Context, customerID int64) (Order, err
 	return i, err
 }
 
-const decrementProductQuantity = `-- name: DecrementProductQuantity :one
-UPDATE products
-SET quantity = quantity - $2
-WHERE id = $1 AND quantity >= $2
-RETURNING id, name, price_in_cents, quantity, created_at, description, image_color
-`
-
-type DecrementProductQuantityParams struct {
-	ID       int64 `json:"id"`
-	Quantity int32 `json:"quantity"`
-}
-
-func (q *Queries) DecrementProductQuantity(ctx context.Context, arg DecrementProductQuantityParams) (Product, error) {
-	row := q.db.QueryRow(ctx, decrementProductQuantity, arg.ID, arg.Quantity)
-	var i Product
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.PriceInCents,
-		&i.Quantity,
-		&i.CreatedAt,
-		&i.Description,
-		&i.ImageColor,
-	)
-	return i, err
-}
-
-const incrementProductQuantity = `-- name: IncrementProductQuantity :one
-UPDATE products
-SET quantity = quantity + $2
-WHERE id = $1
-RETURNING id, name, price_in_cents, quantity, created_at, description, image_color
-`
-
-type IncrementProductQuantityParams struct {
-	ID       int64 `json:"id"`
-	Quantity int32 `json:"quantity"`
-}
-
-func (q *Queries) IncrementProductQuantity(ctx context.Context, arg IncrementProductQuantityParams) (Product, error) {
-	row := q.db.QueryRow(ctx, incrementProductQuantity, arg.ID, arg.Quantity)
-	var i Product
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.PriceInCents,
-		&i.Quantity,
-		&i.CreatedAt,
-		&i.Description,
-		&i.ImageColor,
-	)
-	return i, err
-}
-
 const createOrderItem = `-- name: CreateOrderItem :one
 INSERT INTO order_items (order_id, product_id, quantity, price_in_cents)
 VALUES ($1, $2, $3, $4) RETURNING id, order_id, product_id, quantity, price_in_cents
@@ -341,13 +287,58 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
-const deleteAddress = `-- name: DeleteAddress :exec
-DELETE FROM addresses WHERE id = $1
+const decrementProductQuantity = `-- name: DecrementProductQuantity :one
+UPDATE products
+SET quantity = quantity - $2
+WHERE id = $1 AND quantity >= $2
+RETURNING id, name, price_in_cents, quantity, created_at, description, image_color
 `
 
-func (q *Queries) DeleteAddress(ctx context.Context, id int32) error {
-	_, err := q.db.Exec(ctx, deleteAddress, id)
-	return err
+type DecrementProductQuantityParams struct {
+	ID       int64 `json:"id"`
+	Quantity int32 `json:"quantity"`
+}
+
+func (q *Queries) DecrementProductQuantity(ctx context.Context, arg DecrementProductQuantityParams) (Product, error) {
+	row := q.db.QueryRow(ctx, decrementProductQuantity, arg.ID, arg.Quantity)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.PriceInCents,
+		&i.Quantity,
+		&i.CreatedAt,
+		&i.Description,
+		&i.ImageColor,
+	)
+	return i, err
+}
+
+const deleteAddress = `-- name: DeleteAddress :one
+DELETE FROM addresses WHERE id = $1 AND user_id = $2
+RETURNING id, user_id, street, city, state, zip_code, country, created_at, updated_at
+`
+
+type DeleteAddressParams struct {
+	ID     int32 `json:"id"`
+	UserID int64 `json:"user_id"`
+}
+
+func (q *Queries) DeleteAddress(ctx context.Context, arg DeleteAddressParams) (Address, error) {
+	row := q.db.QueryRow(ctx, deleteAddress, arg.ID, arg.UserID)
+	var i Address
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.Street,
+		&i.City,
+		&i.State,
+		&i.ZipCode,
+		&i.Country,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
 }
 
 const deleteCategory = `-- name: DeleteCategory :one
@@ -506,7 +497,7 @@ func (q *Queries) FindCategoryById(ctx context.Context, id int64) (FindCategoryB
 	return i, err
 }
 
-const findOrderById = `-- name: FindOrderById :one
+const findOrderById = `-- name: FindOrderById :many
 SELECT
     o.id,
     o.customer_id,
@@ -639,6 +630,33 @@ func (q *Queries) FindUserById(ctx context.Context, id int64) (User, error) {
 		&i.CreatedAt,
 		&i.Role,
 		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const incrementProductQuantity = `-- name: IncrementProductQuantity :one
+UPDATE products
+SET quantity = quantity + $2
+WHERE id = $1
+RETURNING id, name, price_in_cents, quantity, created_at, description, image_color
+`
+
+type IncrementProductQuantityParams struct {
+	ID       int64 `json:"id"`
+	Quantity int32 `json:"quantity"`
+}
+
+func (q *Queries) IncrementProductQuantity(ctx context.Context, arg IncrementProductQuantityParams) (Product, error) {
+	row := q.db.QueryRow(ctx, incrementProductQuantity, arg.ID, arg.Quantity)
+	var i Product
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.PriceInCents,
+		&i.Quantity,
+		&i.CreatedAt,
+		&i.Description,
+		&i.ImageColor,
 	)
 	return i, err
 }
@@ -1085,13 +1103,14 @@ func (q *Queries) RevokeToken(ctx context.Context, arg RevokeTokenParams) error 
 
 const updateAddress = `-- name: UpdateAddress :one
 UPDATE addresses
-SET street = $2, city = $3, state = $4, zip_code = $5, country = $6, updated_at = now()
-WHERE id = $1
+SET street = $3, city = $4, state = $5, zip_code = $6, country = $7, updated_at = now()
+WHERE id = $1 AND user_id = $2
 RETURNING id, user_id, street, city, state, zip_code, country, created_at, updated_at
 `
 
 type UpdateAddressParams struct {
 	ID      int32  `json:"id"`
+	UserID  int64  `json:"user_id"`
 	Street  string `json:"street"`
 	City    string `json:"city"`
 	State   string `json:"state"`
@@ -1102,6 +1121,7 @@ type UpdateAddressParams struct {
 func (q *Queries) UpdateAddress(ctx context.Context, arg UpdateAddressParams) (Address, error) {
 	row := q.db.QueryRow(ctx, updateAddress,
 		arg.ID,
+		arg.UserID,
 		arg.Street,
 		arg.City,
 		arg.State,
