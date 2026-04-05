@@ -13,6 +13,7 @@ import (
 	"example.com/ecommerce/internal/products"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/httprate"
 	"github.com/go-chi/jwtauth/v5"
 )
 
@@ -44,9 +45,14 @@ func (app *application) mount() http.Handler {
 
 	authService := auth.NewService(app.db, queries, tokenAuth)
 	authHandler := auth.NewHandler(authService)
-	r.Post("/auth/register", authHandler.RegisterUser)
-	r.Post("/auth/login", authHandler.Login)
-	r.Post("/auth/refresh", authHandler.Refresh)
+
+	// 認証エンドポイント: IP ごとに 5 リクエスト/分
+	r.Group(func(r chi.Router) {
+		r.Use(httprate.LimitByIP(5, 1*time.Minute))
+		r.Post("/auth/register", authHandler.RegisterUser)
+		r.Post("/auth/login", authHandler.Login)
+		r.Post("/auth/refresh", authHandler.Refresh)
+	})
 
 	orderService := orders.NewService(queries, app.db)
 	ordersHandler := orders.NewHandler(orderService)
