@@ -24,6 +24,7 @@ func withChiURLParam(r *http.Request, key, value string) *http.Request {
 
 type mockService struct {
 	listCategoriesFn            func(ctx context.Context) ([]repo.ListCategoriesRow, error)
+	listCategoriesPaginatedFn   func(ctx context.Context, params listCategoriesParams) (paginatedCategories, error)
 	findCategoryByIdFn          func(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error)
 	createCategoriesFn          func(ctx context.Context, name string, description *string, imageColor string) (repo.Category, error)
 	updateCategoriesFn          func(ctx context.Context, id int64, name string, description *string, imageColor string) (repo.Category, error)
@@ -56,6 +57,9 @@ func (m *mockService) AddProductToCategory(ctx context.Context, categoryId int64
 }
 func (m *mockService) RemoveProductFromCategory(ctx context.Context, categoryId int64, productId int64) error {
 	return m.removeProductFromCategoryFn(ctx, categoryId, productId)
+}
+func (m *mockService) ListCategoriesPaginated(ctx context.Context, params listCategoriesParams) (paginatedCategories, error) {
+	return m.listCategoriesPaginatedFn(ctx, params)
 }
 
 // ---------- Tests ----------
@@ -106,16 +110,21 @@ func TestHandlerCreateCategories_400_Validation(t *testing.T) {
 
 func TestHandlerListCategories_200(t *testing.T) {
 	svc := &mockService{
-		listCategoriesFn: func(ctx context.Context) ([]repo.ListCategoriesRow, error) {
-			return []repo.ListCategoriesRow{
-				newTestListCategoriesRow(1, "Electronics"),
-				newTestListCategoriesRow(2, "Clothing"),
+		listCategoriesPaginatedFn: func(ctx context.Context, params listCategoriesParams) (paginatedCategories, error) {
+			return paginatedCategories{
+				Data: []paginatedCategoryRow{
+					{ID: 1, Name: "Electronics", ProductCount: 5},
+					{ID: 2, Name: "Clothing", ProductCount: 3},
+				},
+				Total: 2,
+				Page:  params.Page,
+				Limit: params.Limit,
 			}, nil
 		},
 	}
 	h := NewHandler(svc)
 
-	r := httptest.NewRequest("GET", "/categories", nil)
+	r := httptest.NewRequest("GET", "/categories?page=1&limit=20", nil)
 	w := httptest.NewRecorder()
 
 	h.ListCategories(w, r)
@@ -124,12 +133,15 @@ func TestHandlerListCategories_200(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	var categories []repo.ListCategoriesRow
-	if err := json.NewDecoder(w.Body).Decode(&categories); err != nil {
+	var result paginatedCategories
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if len(categories) != 2 {
-		t.Errorf("expected 2 categories, got %d", len(categories))
+	if len(result.Data) != 2 {
+		t.Errorf("expected 2 categories, got %d", len(result.Data))
+	}
+	if result.Total != 2 {
+		t.Errorf("expected total 2, got %d", result.Total)
 	}
 }
 

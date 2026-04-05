@@ -28,25 +28,48 @@ func (h *handler) ListOrdersByCustomerID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	orders, err := h.service.ListOrdersByCustomerID(r.Context(), customerID)
+	params := parseOrderListParams(r)
+	if err := params.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := h.service.ListOrdersPaginated(r.Context(), customerID, params)
 	if err != nil {
 		slog.Error("failed to list orders", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	json.Write(w, http.StatusOK, orders)
+	json.Write(w, http.StatusOK, result)
 }
 
 func (h *handler) ListAllOrders(w http.ResponseWriter, r *http.Request) {
-	orders, err := h.service.ListAllOrders(r.Context())
+	params := parseOrderListParams(r)
+	if err := params.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := h.service.ListAllOrdersPaginated(r.Context(), params)
 	if err != nil {
 		slog.Error("failed to list all orders", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	json.Write(w, http.StatusOK, orders)
+	json.Write(w, http.StatusOK, result)
+}
+
+func parseOrderListParams(r *http.Request) listOrdersParams {
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	return listOrdersParams{
+		Page:   page,
+		Limit:  limit,
+		Sort:   r.URL.Query().Get("sort"),
+		Status: r.URL.Query().Get("status"),
+	}
 }
 
 func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {

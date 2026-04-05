@@ -42,14 +42,23 @@ func (h *handler) CreateCategories(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *handler) ListCategories(w http.ResponseWriter, r *http.Request) {
-	categories, err := h.service.ListCategories(r.Context())
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+
+	params := listCategoriesParams{Page: page, Limit: limit}
+	if err := params.validate(); err != nil {
+		json.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	result, err := h.service.ListCategoriesPaginated(r.Context(), params)
 	if err != nil {
 		slog.Error("failed to list categories", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
-	json.Write(w, http.StatusOK, categories)
+	json.Write(w, http.StatusOK, result)
 }
 
 func (h *handler) FindCategoryById(w http.ResponseWriter, r *http.Request) {

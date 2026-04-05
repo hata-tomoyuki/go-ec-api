@@ -40,6 +40,80 @@ func (s *svc) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRow, error
 	return s.q.ListAllOrders(ctx)
 }
 
+func (s *svc) listOrdersPaginated(ctx context.Context, customerID *int64, params listOrdersParams) (paginatedOrders, error) {
+	whereSQL := ""
+	args := []any{}
+	argN := 1
+
+	if customerID != nil {
+		whereSQL = fmt.Sprintf(" WHERE o.customer_id = $%d", argN)
+		args = append(args, *customerID)
+		argN++
+	}
+
+	if params.Status != "" {
+		if whereSQL == "" {
+			whereSQL = fmt.Sprintf(" WHERE o.status = $%d", argN)
+		} else {
+			whereSQL += fmt.Sprintf(" AND o.status = $%d", argN)
+		}
+		args = append(args, params.Status)
+		argN++
+	}
+
+	sql := `
+	SELECT o.id, o.customer_id, o.status,
+	       COUNT(oi.id)::int AS item_count,
+	       COALESCE(SUM(oi.price_in_cents * oi.quantity), 0)::bigint AS total_in_cents,
+	       o.created_at, o.updated_at,
+	       COUNT(*) OVER() AS total_count
+	FROM orders o
+	LEFT JOIN order_items oi ON o.id = oi.order_id
+	` + whereSQL + `
+	GROUP BY o.id`
+
+	sortSQL := allowedOrderSorts[params.Sort]
+	offset := (params.Page - 1) * params.Limit
+
+	sql += fmt.Sprintf(" ORDER BY %s LIMIT $%d OFFSET $%d", sortSQL, argN, argN+1)
+	args = append(args, params.Limit, offset)
+
+	rows, err := s.db.(repo.DBTX).Query(ctx, sql, args...)
+	if err != nil {
+		return paginatedOrders{}, err
+	}
+	defer rows.Close()
+
+	orders := make([]paginatedOrderRow, 0)
+	for rows.Next() {
+		var o paginatedOrderRow
+		if err := rows.Scan(&o.ID, &o.CustomerID, &o.Status, &o.ItemCount, &o.TotalInCents, &o.CreatedAt, &o.UpdatedAt, &o.TotalCount); err != nil {
+			return paginatedOrders{}, err
+		}
+		orders = append(orders, o)
+	}
+
+	total := 0
+	if len(orders) > 0 {
+		total = orders[0].TotalCount
+	}
+
+	return paginatedOrders{
+		Data:  orders,
+		Total: total,
+		Page:  params.Page,
+		Limit: params.Limit,
+	}, nil
+}
+
+func (s *svc) ListOrdersPaginated(ctx context.Context, customerID int64, params listOrdersParams) (paginatedOrders, error) {
+	return s.listOrdersPaginated(ctx, &customerID, params)
+}
+
+func (s *svc) ListAllOrdersPaginated(ctx context.Context, params listOrdersParams) (paginatedOrders, error) {
+	return s.listOrdersPaginated(ctx, nil, params)
+}
+
 func (s *svc) FindOrderById(ctx context.Context, orderID int64) ([]repo.FindOrderByIdRow, error) {
 	rows, err := s.q.FindOrderById(ctx, orderID)
 	if err != nil {

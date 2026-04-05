@@ -37,7 +37,7 @@ func (app *application) mount() http.Handler {
 	r.Get("/products", productHandler.ListProduct)
 	r.Get("/products/{id}", productHandler.FindProductById)
 
-	categoryService := categories.NewService(queries)
+	categoryService := categories.NewService(queries, app.db)
 	categoryHandler := categories.NewHandler(categoryService)
 	r.Get("/categories", categoryHandler.ListCategories)
 	r.Get("/categories/{id}", categoryHandler.FindCategoryById)

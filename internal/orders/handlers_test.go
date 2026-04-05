@@ -44,12 +44,14 @@ func withChiURLParam(r *http.Request, key, value string) *http.Request {
 // ---------- mockService ----------
 
 type mockService struct {
-	listAllOrdersFn          func(ctx context.Context) ([]repo.ListAllOrdersRow, error)
-	listOrdersByCustomerIDFn func(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error)
-	findOrderByIdFn          func(ctx context.Context, orderID int64) ([]repo.FindOrderByIdRow, error)
-	placeOrderFn             func(ctx context.Context, tempOrder createOrderParams) (repo.Order, error)
-	cancelOrderFn            func(ctx context.Context, orderID int64, customerID int64) (repo.FindOrderByIdRow, error)
-	updateOrderStatusFn      func(ctx context.Context, orderID int64, status string) (repo.FindOrderByIdRow, error)
+	listAllOrdersFn            func(ctx context.Context) ([]repo.ListAllOrdersRow, error)
+	listAllOrdersPaginatedFn   func(ctx context.Context, params listOrdersParams) (paginatedOrders, error)
+	listOrdersByCustomerIDFn   func(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error)
+	listOrdersPaginatedFn      func(ctx context.Context, customerID int64, params listOrdersParams) (paginatedOrders, error)
+	findOrderByIdFn            func(ctx context.Context, orderID int64) ([]repo.FindOrderByIdRow, error)
+	placeOrderFn               func(ctx context.Context, tempOrder createOrderParams) (repo.Order, error)
+	cancelOrderFn              func(ctx context.Context, orderID int64, customerID int64) (repo.FindOrderByIdRow, error)
+	updateOrderStatusFn        func(ctx context.Context, orderID int64, status string) (repo.FindOrderByIdRow, error)
 }
 
 func (m *mockService) ListAllOrders(ctx context.Context) ([]repo.ListAllOrdersRow, error) {
@@ -69,6 +71,12 @@ func (m *mockService) CancelOrder(ctx context.Context, orderID int64, customerID
 }
 func (m *mockService) UpdateOrderStatus(ctx context.Context, orderID int64, status string) (repo.FindOrderByIdRow, error) {
 	return m.updateOrderStatusFn(ctx, orderID, status)
+}
+func (m *mockService) ListOrdersPaginated(ctx context.Context, customerID int64, params listOrdersParams) (paginatedOrders, error) {
+	return m.listOrdersPaginatedFn(ctx, customerID, params)
+}
+func (m *mockService) ListAllOrdersPaginated(ctx context.Context, params listOrdersParams) (paginatedOrders, error) {
+	return m.listAllOrdersPaginatedFn(ctx, params)
 }
 
 // ---------- helpers ----------
@@ -102,10 +110,15 @@ func newTestOrder(id int64, customerID int64) repo.Order {
 
 func TestHandlerListOrdersByCustomerID_200(t *testing.T) {
 	svc := &mockService{
-		listOrdersByCustomerIDFn: func(ctx context.Context, customerID int64) ([]repo.ListOrdersByCustomerIDRow, error) {
-			return []repo.ListOrdersByCustomerIDRow{
-				{ID: 1, CustomerID: customerID, Status: repo.StatusPending},
-				{ID: 2, CustomerID: customerID, Status: repo.StatusCompleted},
+		listOrdersPaginatedFn: func(ctx context.Context, customerID int64, params listOrdersParams) (paginatedOrders, error) {
+			return paginatedOrders{
+				Data: []paginatedOrderRow{
+					{ID: 1, CustomerID: customerID, Status: "pending"},
+					{ID: 2, CustomerID: customerID, Status: "completed"},
+				},
+				Total: 2,
+				Page:  1,
+				Limit: 20,
 			}, nil
 		},
 	}
@@ -120,12 +133,12 @@ func TestHandlerListOrdersByCustomerID_200(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	var orders []repo.ListOrdersByCustomerIDRow
-	if err := json.NewDecoder(w.Body).Decode(&orders); err != nil {
+	var result paginatedOrders
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if len(orders) != 2 {
-		t.Errorf("expected 2 orders, got %d", len(orders))
+	if len(result.Data) != 2 {
+		t.Errorf("expected 2 orders, got %d", len(result.Data))
 	}
 }
 
@@ -421,10 +434,15 @@ func TestHandlerUpdateOrderStatus_404(t *testing.T) {
 
 func TestHandlerListAllOrders_200(t *testing.T) {
 	svc := &mockService{
-		listAllOrdersFn: func(ctx context.Context) ([]repo.ListAllOrdersRow, error) {
-			return []repo.ListAllOrdersRow{
-				{ID: 1, CustomerID: 10, Status: repo.StatusPending},
-				{ID: 2, CustomerID: 20, Status: repo.StatusCompleted},
+		listAllOrdersPaginatedFn: func(ctx context.Context, params listOrdersParams) (paginatedOrders, error) {
+			return paginatedOrders{
+				Data: []paginatedOrderRow{
+					{ID: 1, CustomerID: 10, Status: "pending"},
+					{ID: 2, CustomerID: 20, Status: "completed"},
+				},
+				Total: 2,
+				Page:  1,
+				Limit: 20,
 			}, nil
 		},
 	}
@@ -439,11 +457,11 @@ func TestHandlerListAllOrders_200(t *testing.T) {
 		t.Fatalf("expected status 200, got %d", w.Code)
 	}
 
-	var orders []repo.ListAllOrdersRow
-	if err := json.NewDecoder(w.Body).Decode(&orders); err != nil {
+	var result paginatedOrders
+	if err := json.NewDecoder(w.Body).Decode(&result); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if len(orders) != 2 {
-		t.Errorf("expected 2 orders, got %d", len(orders))
+	if len(result.Data) != 2 {
+		t.Errorf("expected 2 orders, got %d", len(result.Data))
 	}
 }

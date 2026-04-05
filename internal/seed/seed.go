@@ -288,6 +288,22 @@ func Run(ctx context.Context, pool *pgxpool.Pool) error {
 	fmt.Printf("  注文 3 件作成（注文アイテム含む）\n")
 
 	// --------------------------------------------------
+	// 大量注文データ生成（ページネーション検証用）
+	// --------------------------------------------------
+	const bulkOrderCount = 50
+	if err := generateBulkOrders(ctx, tx, userID, prodIDs, bulkOrderCount); err != nil {
+		return fmt.Errorf("大量注文データ生成に失敗: %w", err)
+	}
+
+	// --------------------------------------------------
+	// 追加カテゴリ生成（ページネーション検証用）
+	// --------------------------------------------------
+	const bulkCategoryCount = 25
+	if err := generateBulkCategories(ctx, tx, bulkCategoryCount); err != nil {
+		return fmt.Errorf("追加カテゴリ生成に失敗: %w", err)
+	}
+
+	// --------------------------------------------------
 	// コミット
 	// --------------------------------------------------
 	if err := tx.Commit(ctx); err != nil {
@@ -302,11 +318,11 @@ func Run(ctx context.Context, pool *pgxpool.Pool) error {
 	fmt.Printf("ユーザー:\n")
 	fmt.Printf("  管理者: admin@example.com / admin1234\n")
 	fmt.Printf("  一般:   tanaka@example.com / password1234\n")
-	fmt.Printf("カテゴリ: %d 件\n", len(categories))
+	fmt.Printf("カテゴリ: %d 件\n", len(categories)+bulkCategoryCount)
 	fmt.Printf("商品:     %d 件\n", len(products)+bulkProductCount)
 	fmt.Printf("住所:     %d 件 (一般ユーザー)\n", len(addresses))
 	fmt.Printf("カート:   %d アイテム (一般ユーザー)\n", len(cartItems))
-	fmt.Printf("注文:     3 件 (completed, pending, cancelled)\n")
+	fmt.Printf("注文:     %d 件\n", 3+bulkOrderCount)
 
 	return nil
 }
@@ -470,6 +486,74 @@ func generateProductName(tmpl categoryTemplate, seq int) string {
 		tmpl.items[rand.IntN(len(tmpl.items))],
 	)
 	return fmt.Sprintf("%s #%04d", randomItemName, seq)
+}
+
+// generateBulkOrders はページネーション検証用の注文データを一括生成する。
+func generateBulkOrders(ctx context.Context, tx pgx.Tx, userID int64, prodIDs []int64, count int) error {
+	statuses := []string{"pending", "completed", "cancelled"}
+
+	for i := 0; i < count; i++ {
+		status := statuses[rand.IntN(len(statuses))]
+
+		var orderID int64
+		err := tx.QueryRow(ctx,
+			`INSERT INTO orders (customer_id, status) VALUES ($1, $2) RETURNING id`,
+			userID, status,
+		).Scan(&orderID)
+		if err != nil {
+			return fmt.Errorf("注文 #%d の作成に失敗: %w", i, err)
+		}
+
+		// 各注文に 1〜3 個のアイテムを追加
+		itemCount := rand.IntN(3) + 1
+		for j := 0; j < itemCount; j++ {
+			prodIdx := rand.IntN(len(prodIDs))
+			qty := int32(rand.IntN(3) + 1)
+			price := int32(rand.IntN(9901)*100 + 10000) // 10000〜1000000 (100円〜10000円)
+
+			_, err = tx.Exec(ctx,
+				`INSERT INTO order_items (order_id, product_id, quantity, price_in_cents)
+				 VALUES ($1, $2, $3, $4)`,
+				orderID, prodIDs[prodIdx], qty, price,
+			)
+			if err != nil {
+				return fmt.Errorf("注文アイテム追加に失敗: %w", err)
+			}
+		}
+	}
+
+	fmt.Printf("  注文 %d 件を一括生成（注文アイテム含む）\n", count)
+	return nil
+}
+
+// generateBulkCategories はページネーション検証用のカテゴリを追加生成する。
+func generateBulkCategories(ctx context.Context, tx pgx.Tx, count int) error {
+	genres := []string{
+		"スポーツ・アウトドア", "インテリア・雑貨", "ベビー・キッズ", "コスメ・美容",
+		"ペット用品", "DIY・工具", "車・バイク用品", "楽器・音楽",
+		"ゲーム・ホビー", "旅行・トラベル", "文房具・オフィス", "健康・サプリ",
+		"日用品・生活雑貨", "アクセサリー・ジュエリー", "靴・シューズ",
+		"バッグ・財布", "アウトレット", "ギフト・贈り物", "季節限定", "新着",
+		"ランキング", "セール", "プレミアム会員限定", "ハンドメイド", "限定コラボ",
+	}
+	colors := []string{
+		"from-violet-500 to-purple-600", "from-cyan-500 to-blue-500",
+		"from-lime-500 to-green-600", "from-red-500 to-rose-600",
+		"from-yellow-400 to-amber-500",
+	}
+
+	for i := 0; i < count && i < len(genres); i++ {
+		_, err := tx.Exec(ctx,
+			`INSERT INTO categories (name, description, image_color) VALUES ($1, $2, $3)`,
+			genres[i], genres[i]+"の商品を取り揃えています", colors[i%len(colors)],
+		)
+		if err != nil {
+			return fmt.Errorf("カテゴリ %q の作成に失敗: %w", genres[i], err)
+		}
+	}
+
+	fmt.Printf("  カテゴリ %d 件を追加生成\n", count)
+	return nil
 }
 
 func hashPassword(plain string) string {
