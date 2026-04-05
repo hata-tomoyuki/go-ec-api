@@ -11,11 +11,14 @@ import (
 	"example.com/ecommerce/internal/categories"
 	"example.com/ecommerce/internal/orders"
 	"example.com/ecommerce/internal/products"
+	"example.com/ecommerce/internal/tracing"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/httprate"
 	"github.com/go-chi/jwtauth/v5"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
 )
 
 func (app *application) mount() http.Handler {
@@ -26,6 +29,11 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
+
+	meter := otel.Meter("ecommerce-http")
+	r.Use(tracing.MetricsMiddleware(meter))
+
+	r.Handle("/metrics", promhttp.Handler())
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Hello, World!"))

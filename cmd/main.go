@@ -39,6 +39,14 @@ func main() {
 	}
 	defer shutdownTracer(ctx)
 
+	// --- OpenTelemetry Metrics ---
+	mp, err := tracing.InitMeter("ecommerce")
+	if err != nil {
+		slog.Error("failed to init meter", "error", err)
+		os.Exit(1)
+	}
+	defer mp.Shutdown(ctx)
+
 	// --- Database pool with query tracing ---
 	poolCfg, err := pgxpool.ParseConfig(cfg.db.dsn)
 	if err != nil {
