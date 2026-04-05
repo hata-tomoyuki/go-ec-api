@@ -28,7 +28,7 @@ func (h *handler) CreateCart(w http.ResponseWriter, r *http.Request) {
 
 	createdCart, err := h.service.CreateCart(r.Context(), userID)
 	if err != nil {
-		slog.Error("failed to create cart", "error", err)
+		slog.ErrorContext(r.Context(), "failed to create cart", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -45,7 +45,7 @@ func (h *handler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 
 	var params addItemToCartParams
 	if err := json.Read(r, &params); err != nil {
-		slog.Error("failed to read request body", "error", err)
+		slog.ErrorContext(r.Context(), "failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -65,7 +65,7 @@ func (h *handler) AddItemToCart(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, ErrInsufficientStock):
 			json.WriteError(w, http.StatusConflict, err.Error())
 		default:
-			slog.Error("failed to add item to cart", "error", err)
+			slog.ErrorContext(r.Context(), "failed to add item to cart", "error", err)
 			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
@@ -83,7 +83,7 @@ func (h *handler) ShowCartItems(w http.ResponseWriter, r *http.Request) {
 
 	items, err := h.service.ListCartItemsByUserId(r.Context(), userID)
 	if err != nil {
-		slog.Error("failed to list cart items", "error", err)
+		slog.ErrorContext(r.Context(), "failed to list cart items", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -106,7 +106,7 @@ func (h *handler) UpdateCartItemQuantity(w http.ResponseWriter, r *http.Request)
 
 	var params updateCartItemParams
 	if err := json.Read(r, &params); err != nil {
-		slog.Error("failed to read request body", "error", err)
+		slog.ErrorContext(r.Context(), "failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -124,7 +124,7 @@ func (h *handler) UpdateCartItemQuantity(w http.ResponseWriter, r *http.Request)
 		case errors.Is(err, ErrCartForbidden):
 			json.WriteError(w, http.StatusForbidden, err.Error())
 		default:
-			slog.Error("failed to update cart item quantity", "error", err)
+			slog.ErrorContext(r.Context(), "failed to update cart item quantity", "error", err)
 			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
@@ -154,7 +154,7 @@ func (h *handler) RemoveItemFromCart(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, ErrCartForbidden):
 			json.WriteError(w, http.StatusForbidden, err.Error())
 		default:
-			slog.Error("failed to remove item from cart", "error", err)
+			slog.ErrorContext(r.Context(), "failed to remove item from cart", "error", err)
 			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
@@ -171,7 +171,7 @@ func (h *handler) ClearCart(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.ClearCart(r.Context(), userID); err != nil {
-		slog.Error("failed to clear cart", "error", err)
+		slog.ErrorContext(r.Context(), "failed to clear cart", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}

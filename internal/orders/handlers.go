@@ -36,7 +36,7 @@ func (h *handler) ListOrdersByCustomerID(w http.ResponseWriter, r *http.Request)
 
 	result, err := h.service.ListOrdersPaginated(r.Context(), customerID, params)
 	if err != nil {
-		slog.Error("failed to list orders", "error", err)
+		slog.ErrorContext(r.Context(),"failed to list orders", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -53,7 +53,7 @@ func (h *handler) ListAllOrders(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.service.ListAllOrdersPaginated(r.Context(), params)
 	if err != nil {
-		slog.Error("failed to list all orders", "error", err)
+		slog.ErrorContext(r.Context(),"failed to list all orders", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -91,7 +91,7 @@ func (h *handler) FindOrderById(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		slog.Error("failed to find order", "error", err, "order_id", orderID)
+		slog.ErrorContext(r.Context(),"failed to find order", "error", err, "order_id", orderID)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -117,7 +117,7 @@ func (h *handler) FindOrderByIdAdmin(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		slog.Error("failed to find order", "error", err, "order_id", orderID)
+		slog.ErrorContext(r.Context(),"failed to find order", "error", err, "order_id", orderID)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -134,7 +134,7 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 
 	var tempOrder createOrderParams
 	if err := json.Read(r, &tempOrder); err != nil {
-		slog.Error("failed to read request body", "error", err)
+		slog.ErrorContext(r.Context(),"failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -151,7 +151,7 @@ func (h *handler) PlaceOrder(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, ErrorProductNotFound):
 			json.WriteError(w, http.StatusNotFound, err.Error())
 		default:
-			slog.Error("failed to place order", "error", err)
+			slog.ErrorContext(r.Context(),"failed to place order", "error", err)
 			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
@@ -183,7 +183,7 @@ func (h *handler) CancelOrder(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, ErrOrderNotPending):
 			json.WriteError(w, http.StatusBadRequest, err.Error())
 		default:
-			slog.Error("failed to cancel order", "error", err, "order_id", orderID)
+			slog.ErrorContext(r.Context(),"failed to cancel order", "error", err, "order_id", orderID)
 			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
@@ -203,7 +203,7 @@ func (h *handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		Status string `json:"status"`
 	}
 	if err := json.Read(r, &req); err != nil {
-		slog.Error("failed to read request body", "error", err)
+		slog.ErrorContext(r.Context(),"failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -216,7 +216,7 @@ func (h *handler) UpdateOrderStatus(w http.ResponseWriter, r *http.Request) {
 		case errors.Is(err, ErrOrderNotFound):
 			json.WriteError(w, http.StatusNotFound, err.Error())
 		default:
-			slog.Error("failed to update order status", "error", err, "order_id", orderID)
+			slog.ErrorContext(r.Context(),"failed to update order status", "error", err, "order_id", orderID)
 			json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return

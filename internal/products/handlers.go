@@ -41,7 +41,7 @@ func (h *handler) ListProduct(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.service.ListProductsPaginated(r.Context(), params)
 	if err != nil {
-		slog.Error("failed to list products", "error", err)
+		slog.ErrorContext(r.Context(), "failed to list products", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -63,7 +63,7 @@ func (h *handler) FindProductById(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		slog.Error("failed to find product", "error", err, "id", id)
+		slog.ErrorContext(r.Context(), "failed to find product", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -74,7 +74,7 @@ func (h *handler) FindProductById(w http.ResponseWriter, r *http.Request) {
 func (h *handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	var tempProduct createProductParams
 	if err := json.Read(r, &tempProduct); err != nil {
-		slog.Error("failed to read request body", "error", err)
+		slog.ErrorContext(r.Context(), "failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -86,7 +86,7 @@ func (h *handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 
 	createdProduct, err := h.service.CreateProduct(r.Context(), tempProduct)
 	if err != nil {
-		slog.Error("failed to create product", "error", err)
+		slog.ErrorContext(r.Context(), "failed to create product", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -104,7 +104,7 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 
 	var tempProduct updateProductParams
 	if err := json.Read(r, &tempProduct); err != nil {
-		slog.Error("failed to read request body", "error", err)
+		slog.ErrorContext(r.Context(), "failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -122,7 +122,7 @@ func (h *handler) UpdateProduct(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		slog.Error("failed to update product", "error", err, "id", id)
+		slog.ErrorContext(r.Context(), "failed to update product", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -144,7 +144,7 @@ func (h *handler) DeleteProduct(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		slog.Error("failed to delete product", "error", err, "id", id)
+		slog.ErrorContext(r.Context(), "failed to delete product", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}

@@ -27,7 +27,7 @@ func main() {
 		},
 	}
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	logger := slog.New(tracing.NewTraceHandler(slog.NewTextHandler(os.Stdout, nil)))
 	slog.SetDefault(logger)
 
 	// --- OpenTelemetry ---

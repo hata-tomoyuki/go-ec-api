@@ -21,7 +21,7 @@ func NewHandler(service Service) *handler {
 func (h *handler) CreateCategories(w http.ResponseWriter, r *http.Request) {
 	var tempCategory createCategoryParams
 	if err := json.Read(r, &tempCategory); err != nil {
-		slog.Error("failed to read request body", "error", err)
+		slog.ErrorContext(r.Context(), "failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -33,7 +33,7 @@ func (h *handler) CreateCategories(w http.ResponseWriter, r *http.Request) {
 
 	createdCategory, err := h.service.CreateCategories(r.Context(), tempCategory.Name, tempCategory.Description, tempCategory.ImageColor)
 	if err != nil {
-		slog.Error("failed to create category", "error", err)
+		slog.ErrorContext(r.Context(), "failed to create category", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -53,7 +53,7 @@ func (h *handler) ListCategories(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.service.ListCategoriesPaginated(r.Context(), params)
 	if err != nil {
-		slog.Error("failed to list categories", "error", err)
+		slog.ErrorContext(r.Context(), "failed to list categories", "error", err)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -75,7 +75,7 @@ func (h *handler) FindCategoryById(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		slog.Error("failed to find category", "error", err, "id", id)
+		slog.ErrorContext(r.Context(), "failed to find category", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -93,7 +93,7 @@ func (h *handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 
 	var tempCategory createCategoryParams
 	if err := json.Read(r, &tempCategory); err != nil {
-		slog.Error("failed to read request body", "error", err)
+		slog.ErrorContext(r.Context(), "failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
@@ -109,7 +109,7 @@ func (h *handler) UpdateCategory(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		slog.Error("failed to update category", "error", err, "id", id)
+		slog.ErrorContext(r.Context(), "failed to update category", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -130,7 +130,7 @@ func (h *handler) DeleteCategory(w http.ResponseWriter, r *http.Request) {
 			json.WriteError(w, http.StatusNotFound, err.Error())
 			return
 		}
-		slog.Error("failed to delete category", "error", err, "id", id)
+		slog.ErrorContext(r.Context(), "failed to delete category", "error", err, "id", id)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -148,7 +148,7 @@ func (h *handler) ListProductsByCategory(w http.ResponseWriter, r *http.Request)
 
 	products, err := h.service.ListProductsByCategory(r.Context(), id)
 	if err != nil {
-		slog.Error("failed to list products by category", "error", err, "category_id", id)
+		slog.ErrorContext(r.Context(), "failed to list products by category", "error", err, "category_id", id)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -169,13 +169,13 @@ func (h *handler) AddProductToCategory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.Read(r, &temp); err != nil {
-		slog.Error("failed to read request body", "error", err)
+		slog.ErrorContext(r.Context(), "failed to read request body", "error", err)
 		json.WriteError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	if err := h.service.AddProductToCategory(r.Context(), categoryId, temp.ProductID); err != nil {
-		slog.Error("failed to add product to category", "error", err, "category_id", categoryId, "product_id", temp.ProductID)
+		slog.ErrorContext(r.Context(), "failed to add product to category", "error", err, "category_id", categoryId, "product_id", temp.ProductID)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
@@ -199,7 +199,7 @@ func (h *handler) RemoveProductFromCategory(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := h.service.RemoveProductFromCategory(r.Context(), categoryId, productId); err != nil {
-		slog.Error("failed to remove product from category", "error", err, "category_id", categoryId, "product_id", productId)
+		slog.ErrorContext(r.Context(), "failed to remove product from category", "error", err, "category_id", categoryId, "product_id", productId)
 		json.WriteError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
