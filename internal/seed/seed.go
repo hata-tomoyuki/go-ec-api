@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand/v2"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -144,6 +146,14 @@ func Run(ctx context.Context, pool *pgxpool.Pool) error {
 		}
 	}
 	fmt.Printf("  商品 %d 件作成（カテゴリ紐付け済み）\n", len(products))
+
+	// --------------------------------------------------
+	// 大量商品データ生成（パフォーマンス検証用）
+	// --------------------------------------------------
+	const bulkProductCount = 10000
+	if err := generateBulkProducts(ctx, tx, catIDs, bulkProductCount); err != nil {
+		return fmt.Errorf("大量商品データ生成に失敗: %w", err)
+	}
 
 	// --------------------------------------------------
 	// Addresses（一般ユーザー用）
@@ -293,12 +303,173 @@ func Run(ctx context.Context, pool *pgxpool.Pool) error {
 	fmt.Printf("  管理者: admin@example.com / admin1234\n")
 	fmt.Printf("  一般:   tanaka@example.com / password1234\n")
 	fmt.Printf("カテゴリ: %d 件\n", len(categories))
-	fmt.Printf("商品:     %d 件\n", len(products))
+	fmt.Printf("商品:     %d 件\n", len(products)+bulkProductCount)
 	fmt.Printf("住所:     %d 件 (一般ユーザー)\n", len(addresses))
 	fmt.Printf("カート:   %d アイテム (一般ユーザー)\n", len(cartItems))
 	fmt.Printf("注文:     3 件 (completed, pending, cancelled)\n")
 
 	return nil
+}
+
+// ------------------------------------------------------------
+// カテゴリごとの商品名テンプレート
+// ------------------------------------------------------------
+
+type categoryTemplate struct {
+	adjectives  []string
+	materials   []string
+	items       []string
+	description string
+	colors      []string
+}
+
+var categoryTemplates = map[int]categoryTemplate{
+	// メンズファッション
+	0: {
+		adjectives:  []string{"プレミアム", "クラシック", "モダン", "ヴィンテージ", "スタイリッシュ", "カジュアル", "ハイエンド", "ナチュラル"},
+		materials:   []string{"コットン", "リネン", "ウール", "デニム", "レザー", "シルク", "カシミア"},
+		items:       []string{"ジャケット", "シャツ", "パンツ", "コート", "セーター", "ベスト", "ポロシャツ"},
+		description: "こだわりの素材と縫製で仕上げたメンズアイテム。日常からビジネスシーンまで幅広く活躍します。",
+		colors:      []string{"from-sky-400 to-blue-600", "from-indigo-500 to-blue-700", "from-blue-500 to-indigo-600", "from-slate-500 to-blue-700"},
+	},
+	// レディースファッション
+	1: {
+		adjectives:  []string{"エレガント", "フェミニン", "シック", "ボヘミアン", "グラマラス", "リラックス", "トレンド", "上品"},
+		materials:   []string{"シフォン", "レース", "シルク", "オーガニックコットン", "サテン", "ツイード"},
+		items:       []string{"ワンピース", "ブラウス", "スカート", "カーディガン", "トップス", "パンプス", "ストール"},
+		description: "上質な素材と繊細なデザインが魅力のレディースアイテム。毎日のおしゃれを格上げします。",
+		colors:      []string{"from-pink-400 to-rose-500", "from-rose-400 to-pink-600", "from-fuchsia-400 to-pink-500", "from-pink-300 to-rose-500"},
+	},
+	// 家電・ガジェット
+	2: {
+		adjectives:  []string{"ハイスペック", "コンパクト", "多機能", "次世代", "省エネ", "プロ仕様", "ポータブル", "スマート", "超軽量"},
+		materials:   []string{"ワイヤレス", "Bluetooth", "USB-C", "4K", "AI搭載", "防水"},
+		items:       []string{"チャージャー", "イヤホン", "モニター", "キーボード", "マウス", "スピーカー", "カメラ", "タブレット"},
+		description: "最新テクノロジーを搭載した高性能ガジェット。快適なデジタルライフをサポートします。",
+		colors:      []string{"from-slate-500 to-gray-700", "from-gray-600 to-slate-800", "from-zinc-500 to-slate-700", "from-neutral-500 to-gray-700"},
+	},
+	// 食品・グルメ
+	3: {
+		adjectives:  []string{"特選", "厳選", "極上", "老舗", "手作り", "有機", "産地直送", "贅沢"},
+		materials:   []string{"宇治", "北海道", "九州", "信州", "京都", "沖縄", "瀬戸内"},
+		items:       []string{"チョコレート", "クッキー", "ジャム", "はちみつ", "お茶セット", "おかきセット", "ドレッシング", "パスタソース"},
+		description: "素材の味を活かした、こだわりの逸品。大切な方へのギフトにもおすすめです。",
+		colors:      []string{"from-amber-400 to-orange-500", "from-orange-500 to-red-600", "from-yellow-500 to-amber-600", "from-amber-500 to-orange-600"},
+	},
+	// 本・書籍
+	4: {
+		adjectives:  []string{"実践", "入門", "最新", "図解", "徹底解説", "プロが教える", "よくわかる", "基礎から学ぶ"},
+		materials:   []string{"Python", "Go", "React", "AWS", "データ分析", "機械学習", "セキュリティ", "デザイン"},
+		items:       []string{"ガイドブック", "教科書", "ハンドブック", "リファレンス", "入門書", "実践マニュアル"},
+		description: "第一線の専門家が執筆した、すぐに役立つ技術書。初心者から上級者まで幅広く対応します。",
+		colors:      []string{"from-emerald-500 to-teal-600", "from-teal-500 to-emerald-700", "from-green-500 to-teal-600", "from-emerald-400 to-green-600"},
+	},
+}
+
+// generateBulkProducts は CopyFrom を使って大量の商品データを一括挿入する。
+func generateBulkProducts(ctx context.Context, tx pgx.Tx, catIDs []int64, count int) error {
+	type bulkProduct struct {
+		name         string
+		description  string
+		priceInCents int32
+		quantity     int32
+		imageColor   string
+		categoryIdx  int
+	}
+
+	products := make([]bulkProduct, 0, count)
+	for i := 0; i < count; i++ {
+		catIdx := i % len(catIDs)
+		tmpl := categoryTemplates[catIdx]
+
+		name := generateProductName(tmpl, i)
+
+		price := int32(rand.IntN(19901)*50 + 50000) // 50000〜10000000 (500円〜100,000円), 50刻み
+		qty := int32(rand.IntN(501))
+		// 5% を在庫 0 に
+		if rand.IntN(100) < 5 {
+			qty = 0
+		}
+		color := tmpl.colors[rand.IntN(len(tmpl.colors))]
+
+		products = append(products, bulkProduct{
+			name:         name,
+			description:  tmpl.description,
+			priceInCents: price,
+			quantity:     qty,
+			imageColor:   color,
+			categoryIdx:  catIdx,
+		})
+	}
+
+	// --- products テーブルへ CopyFrom ---
+	prodRows := make([][]any, len(products))
+	for i, p := range products {
+		prodRows[i] = []any{p.name, p.description, p.priceInCents, p.quantity, p.imageColor}
+	}
+	copiedCount, err := tx.CopyFrom(
+		ctx,
+		pgx.Identifier{"products"},
+		[]string{"name", "description", "price_in_cents", "quantity", "image_color"},
+		pgx.CopyFromRows(prodRows),
+	)
+	if err != nil {
+		return fmt.Errorf("商品の一括挿入に失敗: %w", err)
+	}
+
+	// --- 挿入した product ID を取得 ---
+	rows, err := tx.Query(ctx,
+		`SELECT id FROM products ORDER BY id DESC LIMIT $1`, copiedCount)
+	if err != nil {
+		return fmt.Errorf("挿入済み商品IDの取得に失敗: %w", err)
+	}
+	defer rows.Close()
+
+	// DESC で取得するので逆順にして products スライスと対応させる
+	insertedIDs := make([]int64, 0, copiedCount)
+	for rows.Next() {
+		var id int64
+		if err := rows.Scan(&id); err != nil {
+			return fmt.Errorf("商品IDのスキャンに失敗: %w", err)
+		}
+		insertedIDs = append(insertedIDs, id)
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("商品ID取得中にエラー: %w", err)
+	}
+	// 逆順にして挿入順に揃える
+	for i, j := 0, len(insertedIDs)-1; i < j; i, j = i+1, j-1 {
+		insertedIDs[i], insertedIDs[j] = insertedIDs[j], insertedIDs[i]
+	}
+
+	// --- product_categories テーブルへ CopyFrom ---
+	catRows := make([][]any, len(insertedIDs))
+	for i, pid := range insertedIDs {
+		catRows[i] = []any{pid, catIDs[products[i].categoryIdx]}
+	}
+	_, err = tx.CopyFrom(
+		ctx,
+		pgx.Identifier{"product_categories"},
+		[]string{"product_id", "category_id"},
+		pgx.CopyFromRows(catRows),
+	)
+	if err != nil {
+		return fmt.Errorf("商品-カテゴリ紐付けの一括挿入に失敗: %w", err)
+	}
+
+	fmt.Printf("  商品 %d 件を一括生成（カテゴリ紐付け済み）\n", copiedCount)
+	return nil
+}
+
+// generateProductName はテンプレートと連番から商品名を生成する。
+func generateProductName(tmpl categoryTemplate, seq int) string {
+	randomItemName := fmt.Sprintf(
+		"%s %s %s",
+		tmpl.adjectives[rand.IntN(len(tmpl.adjectives))],
+		tmpl.materials[rand.IntN(len(tmpl.materials))],
+		tmpl.items[rand.IntN(len(tmpl.items))],
+	)
+	return fmt.Sprintf("%s #%04d", randomItemName, seq)
 }
 
 func hashPassword(plain string) string {
