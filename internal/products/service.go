@@ -51,7 +51,7 @@ func (s *svc) ListProductsPaginated(ctx context.Context, params listProductsPara
 
 	sql := `
 	SELECT p.id, p.name, p.description, p.price_in_cents, p.quantity,
-	       p.image_color, p.created_at,
+	       p.image_color, p.created_at, COUNT(*) OVER() AS total_count,
 		   COALESCE(pc.category_id, 0)::bigint AS category_id,
 		   COALESCE(c.name, '')::text AS category_name
 	FROM products p
@@ -74,20 +74,15 @@ func (s *svc) ListProductsPaginated(ctx context.Context, params listProductsPara
 	products := make([]paginatedProductRow, 0)
 	for rows.Next() {
 		var p paginatedProductRow
-		if err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.PriceInCents, &p.Quantity, &p.ImageColor, &p.CreatedAt, &p.CategoryID, &p.CategoryName); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Description, &p.PriceInCents, &p.Quantity, &p.ImageColor, &p.CreatedAt, &p.TotalCount, &p.CategoryID, &p.CategoryName); err != nil {
 			return paginatedProducts{}, err
 		}
 		products = append(products, p)
 	}
 
-	countSQL := "SELECT COUNT(*) FROM products p"
-	if params.CategoryID > 0 {
-		countSQL += " LEFT JOIN product_categories pc ON p.id = pc.product_id"
-	}
-	countSQL += whereSQL
-	var total int
-	if err := s.db.QueryRow(ctx, countSQL, whereArgs...).Scan(&total); err != nil {
-		return paginatedProducts{}, err
+	total := 0
+	if len(products) > 0 {
+		total = products[0].TotalCount
 	}
 
 	return paginatedProducts{

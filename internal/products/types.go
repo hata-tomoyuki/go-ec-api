@@ -69,6 +69,7 @@ type paginatedProductRow struct {
 	CreatedAt    pgtype.Timestamptz `json:"created_at"`
 	CategoryID   int64              `json:"category_id"`
 	CategoryName string             `json:"category_name"`
+	TotalCount   int                `json:"-"` // COUNT(*) OVER() の結果（JSONには含めない）
 }
 
 type createProductParams struct {
