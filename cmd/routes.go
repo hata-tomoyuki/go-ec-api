@@ -9,6 +9,7 @@ import (
 	"example.com/ecommerce/internal/auth"
 	"example.com/ecommerce/internal/carts"
 	"example.com/ecommerce/internal/categories"
+	secmw "example.com/ecommerce/internal/middleware"
 	"example.com/ecommerce/internal/orders"
 	"example.com/ecommerce/internal/products"
 	"example.com/ecommerce/internal/tracing"
@@ -28,6 +29,8 @@ func (app *application) mount() http.Handler {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(secmw.CORS())          // プリフライトを早期処理
+	r.Use(secmw.SecurityHeaders) // 全レスポンスにセキュリティヘッダー付与
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	meter := otel.Meter("ecommerce-http")
