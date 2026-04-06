@@ -9,7 +9,12 @@ import (
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 	"example.com/ecommerce/internal/cache"
 	"github.com/jackc/pgx/v5"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var tracer = otel.Tracer("products")
 
 type svc struct {
 	repo  repo.Querier
@@ -54,14 +59,25 @@ func buildWhereClause(params listProductsParams) (string, []interface{}, int) {
 }
 
 func (s *svc) ListProductsPaginated(ctx context.Context, params listProductsParams) (paginatedProducts, error) {
+	ctx, span := tracer.Start(ctx, "products.ListPaginated")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.Int("page", params.Page),
+		attribute.Int("limit", params.Limit),
+		attribute.String("sort", params.Sort),
+	)
+
 	// Cache check
 	key := cache.ProductListKey(params.Page, params.Limit, params.Sort, params.Search, params.CategoryID)
 	if key != "" {
 		if cached, ok := cache.Get[paginatedProducts](ctx, s.cache, key); ok {
 			slog.Debug("products list cache hit", "key", key)
+			span.SetAttributes(attribute.Bool("cache.hit", true))
 			return cached, nil
 		}
 	}
+	span.SetAttributes(attribute.Bool("cache.hit", false))
 
 	whereSQL, whereArgs, argN := buildWhereClause(params)
 
@@ -117,18 +133,29 @@ func (s *svc) ListProductsPaginated(ctx context.Context, params listProductsPara
 }
 
 func (s *svc) FindProductById(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
+	ctx, span := tracer.Start(ctx, "products.FindById")
+	defer span.End()
+
+	span.SetAttributes(attribute.Int64("product_id", id))
+
 	// Cache check
 	key := cache.ProductDetailKey(id)
 	if cached, ok := cache.Get[repo.FindProductByIdRow](ctx, s.cache, key); ok {
 		slog.Debug("product detail cache hit", "id", id)
+		span.SetAttributes(attribute.Bool("cache.hit", true))
 		return cached, nil
 	}
+	span.SetAttributes(attribute.Bool("cache.hit", false))
 
 	product, err := s.repo.FindProductById(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
+			span.RecordError(err)
+			span.SetStatus(codes.Error, err.Error())
 			return repo.FindProductByIdRow{}, ErrProductNotFound
 		}
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return repo.FindProductByIdRow{}, err
 	}
 
@@ -139,6 +166,11 @@ func (s *svc) FindProductById(ctx context.Context, id int64) (repo.FindProductBy
 }
 
 func (s *svc) CreateProduct(ctx context.Context, tempProduct createProductParams) (repo.Product, error) {
+	ctx, span := tracer.Start(ctx, "products.Create")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("product_name", tempProduct.Name))
+
 	product, err := s.repo.CreateProduct(ctx, repo.CreateProductParams{
 		Name:         tempProduct.Name,
 		PriceInCents: tempProduct.PriceInCents,
@@ -147,6 +179,8 @@ func (s *svc) CreateProduct(ctx context.Context, tempProduct createProductParams
 		Quantity:     tempProduct.Quantity,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return repo.Product{}, err
 	}
 
@@ -157,6 +191,11 @@ func (s *svc) CreateProduct(ctx context.Context, tempProduct createProductParams
 }
 
 func (s *svc) UpdateProduct(ctx context.Context, tempProduct updateProductParams) (repo.Product, error) {
+	ctx, span := tracer.Start(ctx, "products.Update")
+	defer span.End()
+
+	span.SetAttributes(attribute.Int64("product_id", tempProduct.ID))
+
 	product, err := s.repo.UpdateProduct(ctx, repo.UpdateProductParams{
 		ID:           tempProduct.ID,
 		Name:         tempProduct.Name,
@@ -166,6 +205,8 @@ func (s *svc) UpdateProduct(ctx context.Context, tempProduct updateProductParams
 		Quantity:     tempProduct.Quantity,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if errors.Is(err, pgx.ErrNoRows) {
 			return repo.Product{}, ErrProductNotFound
 		}
@@ -180,8 +221,15 @@ func (s *svc) UpdateProduct(ctx context.Context, tempProduct updateProductParams
 }
 
 func (s *svc) DeleteProduct(ctx context.Context, id int64) error {
+	ctx, span := tracer.Start(ctx, "products.Delete")
+	defer span.End()
+
+	span.SetAttributes(attribute.Int64("product_id", id))
+
 	_, err := s.repo.DeleteProduct(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrProductNotFound
 		}

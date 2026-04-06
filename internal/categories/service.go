@@ -9,7 +9,12 @@ import (
 	"example.com/ecommerce/internal/cache"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
+
+var tracer = otel.Tracer("categories")
 
 type svc struct {
 	repo  repo.Querier
@@ -30,12 +35,22 @@ func (s *svc) ListCategories(ctx context.Context) ([]repo.ListCategoriesRow, err
 }
 
 func (s *svc) ListCategoriesPaginated(ctx context.Context, params listCategoriesParams) (paginatedCategories, error) {
+	ctx, span := tracer.Start(ctx, "categories.ListPaginated")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.Int("page", params.Page),
+		attribute.Int("limit", params.Limit),
+	)
+
 	// Cache check
 	key := cache.CategoryListKey(params.Page, params.Limit)
 	if cached, ok := cache.Get[paginatedCategories](ctx, s.cache, key); ok {
 		slog.Debug("categories list cache hit", "key", key)
+		span.SetAttributes(attribute.Bool("cache.hit", true))
 		return cached, nil
 	}
+	span.SetAttributes(attribute.Bool("cache.hit", false))
 
 	offset := (params.Page - 1) * params.Limit
 
@@ -82,6 +97,11 @@ func (s *svc) ListCategoriesPaginated(ctx context.Context, params listCategories
 }
 
 func (s *svc) CreateCategories(ctx context.Context, name string, description *string, imageColor string) (repo.Category, error) {
+	ctx, span := tracer.Start(ctx, "categories.Create")
+	defer span.End()
+
+	span.SetAttributes(attribute.String("category_name", name))
+
 	desc := pgtype.Text{Valid: false}
 	if description != nil {
 		desc = pgtype.Text{
@@ -96,6 +116,8 @@ func (s *svc) CreateCategories(ctx context.Context, name string, description *st
 		ImageColor:  imageColor,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return repo.Category{}, err
 	}
 
@@ -106,15 +128,24 @@ func (s *svc) CreateCategories(ctx context.Context, name string, description *st
 }
 
 func (s *svc) FindCategoryById(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
+	ctx, span := tracer.Start(ctx, "categories.FindById")
+	defer span.End()
+
+	span.SetAttributes(attribute.Int64("category_id", id))
+
 	// Cache check
 	key := cache.CategoryDetailKey(id)
 	if cached, ok := cache.Get[repo.FindCategoryByIdRow](ctx, s.cache, key); ok {
 		slog.Debug("category detail cache hit", "id", id)
+		span.SetAttributes(attribute.Bool("cache.hit", true))
 		return cached, nil
 	}
+	span.SetAttributes(attribute.Bool("cache.hit", false))
 
 	category, err := s.repo.FindCategoryById(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if errors.Is(err, pgx.ErrNoRows) {
 			return repo.FindCategoryByIdRow{}, ErrCategoryNotFound
 		}
@@ -128,6 +159,11 @@ func (s *svc) FindCategoryById(ctx context.Context, id int64) (repo.FindCategory
 }
 
 func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, description *string, imageColor string) (repo.Category, error) {
+	ctx, span := tracer.Start(ctx, "categories.Update")
+	defer span.End()
+
+	span.SetAttributes(attribute.Int64("category_id", id))
+
 	desc := pgtype.Text{Valid: false}
 	if description != nil {
 		desc = pgtype.Text{
@@ -143,6 +179,8 @@ func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, descr
 		ImageColor:  imageColor,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if errors.Is(err, pgx.ErrNoRows) {
 			return repo.Category{}, ErrCategoryNotFound
 		}
@@ -157,8 +195,15 @@ func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, descr
 }
 
 func (s *svc) DeleteCategory(ctx context.Context, id int64) error {
+	ctx, span := tracer.Start(ctx, "categories.Delete")
+	defer span.End()
+
+	span.SetAttributes(attribute.Int64("category_id", id))
+
 	_, err := s.repo.DeleteCategory(ctx, id)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrCategoryNotFound
 		}
@@ -173,15 +218,24 @@ func (s *svc) DeleteCategory(ctx context.Context, id int64) error {
 }
 
 func (s *svc) ListProductsByCategory(ctx context.Context, categoryId int64) ([]repo.ListProductsByCategoryRow, error) {
+	ctx, span := tracer.Start(ctx, "categories.ListProducts")
+	defer span.End()
+
+	span.SetAttributes(attribute.Int64("category_id", categoryId))
+
 	// Cache check
 	key := cache.CategoryProductsKey(categoryId)
 	if cached, ok := cache.Get[[]repo.ListProductsByCategoryRow](ctx, s.cache, key); ok {
 		slog.Debug("category products cache hit", "categoryId", categoryId)
+		span.SetAttributes(attribute.Bool("cache.hit", true))
 		return cached, nil
 	}
+	span.SetAttributes(attribute.Bool("cache.hit", false))
 
 	products, err := s.repo.ListProductsByCategory(ctx, categoryId)
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
@@ -192,11 +246,21 @@ func (s *svc) ListProductsByCategory(ctx context.Context, categoryId int64) ([]r
 }
 
 func (s *svc) AddProductToCategory(ctx context.Context, categoryId int64, productId int64) error {
+	ctx, span := tracer.Start(ctx, "categories.AddProduct")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.Int64("category_id", categoryId),
+		attribute.Int64("product_id", productId),
+	)
+
 	err := s.repo.AddProductToCategory(ctx, repo.AddProductToCategoryParams{
 		ProductID:  productId,
 		CategoryID: categoryId,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
@@ -209,11 +273,21 @@ func (s *svc) AddProductToCategory(ctx context.Context, categoryId int64, produc
 }
 
 func (s *svc) RemoveProductFromCategory(ctx context.Context, categoryId int64, productId int64) error {
+	ctx, span := tracer.Start(ctx, "categories.RemoveProduct")
+	defer span.End()
+
+	span.SetAttributes(
+		attribute.Int64("category_id", categoryId),
+		attribute.Int64("product_id", productId),
+	)
+
 	err := s.repo.RemoveProductFromCategory(ctx, repo.RemoveProductFromCategoryParams{
 		ProductID:  productId,
 		CategoryID: categoryId,
 	})
 	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
