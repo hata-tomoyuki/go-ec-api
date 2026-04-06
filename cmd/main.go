@@ -9,6 +9,7 @@ import (
 	"example.com/ecommerce/internal/tracing"
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 var tokenAuth *jwtauth.JWTAuth
@@ -24,6 +25,9 @@ func main() {
 		addr: ":8080",
 		db: dbConfig{
 			dsn: env.GetString("GOOSE_DBSTRING", "host=127.0.0.1 port=5433 user=postgres password=postgres dbname=ecom sslmode=disable"),
+		},
+		redis: redisConfig{
+			addr: env.GetString("REDIS_ADDR", "localhost:6379"),
 		},
 	}
 
@@ -62,9 +66,21 @@ func main() {
 
 	logger.Info("connected to database")
 
+	// --- Redis ---
+	rdb := redis.NewClient(&redis.Options{
+		Addr: cfg.redis.addr,
+	})
+	if err := rdb.Ping(ctx).Err(); err != nil {
+		slog.Warn("redis not available, running without cache", "error", err)
+	} else {
+		logger.Info("connected to redis", "addr", cfg.redis.addr)
+	}
+	defer rdb.Close()
+
 	api := application{
 		config: cfg,
 		db:     pool,
+		rdb:    rdb,
 	}
 
 	if err := api.run(api.mount()); err != nil {

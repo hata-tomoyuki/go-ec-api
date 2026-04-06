@@ -7,6 +7,7 @@ import (
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
 	"example.com/ecommerce/internal/address"
 	"example.com/ecommerce/internal/auth"
+	"example.com/ecommerce/internal/cache"
 	"example.com/ecommerce/internal/carts"
 	"example.com/ecommerce/internal/categories"
 	secmw "example.com/ecommerce/internal/middleware"
@@ -43,13 +44,14 @@ func (app *application) mount() http.Handler {
 	})
 
 	queries := repo.New(app.db)
+	cacheStore := cache.NewStore(app.rdb)
 
-	productService := products.NewService(queries, app.db)
+	productService := products.NewService(queries, app.db, cacheStore)
 	productHandler := products.NewHandler(productService)
 	r.Get("/products", productHandler.ListProduct)
 	r.Get("/products/{id}", productHandler.FindProductById)
 
-	categoryService := categories.NewService(queries, app.db)
+	categoryService := categories.NewService(queries, app.db, cacheStore)
 	categoryHandler := categories.NewHandler(categoryService)
 	r.Get("/categories", categoryHandler.ListCategories)
 	r.Get("/categories/{id}", categoryHandler.FindCategoryById)

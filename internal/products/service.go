@@ -4,18 +4,25 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
+	"example.com/ecommerce/internal/cache"
 	"github.com/jackc/pgx/v5"
 )
 
 type svc struct {
-	repo repo.Querier
-	db   repo.DBTX
+	repo  repo.Querier
+	db    repo.DBTX
+	cache *cache.Store
 }
 
-func NewService(repo repo.Querier, db repo.DBTX) Service {
-	return &svc{repo: repo, db: db}
+func NewService(repo repo.Querier, db repo.DBTX, cacheStore ...*cache.Store) Service {
+	s := &svc{repo: repo, db: db}
+	if len(cacheStore) > 0 {
+		s.cache = cacheStore[0]
+	}
+	return s
 }
 
 func (s *svc) ListProducts(ctx context.Context) ([]repo.ListProductsRow, error) {
@@ -47,6 +54,15 @@ func buildWhereClause(params listProductsParams) (string, []interface{}, int) {
 }
 
 func (s *svc) ListProductsPaginated(ctx context.Context, params listProductsParams) (paginatedProducts, error) {
+	// Cache check
+	key := cache.ProductListKey(params.Page, params.Limit, params.Sort, params.Search, params.CategoryID)
+	if key != "" {
+		if cached, ok := cache.Get[paginatedProducts](ctx, s.cache, key); ok {
+			slog.Debug("products list cache hit", "key", key)
+			return cached, nil
+		}
+	}
+
 	whereSQL, whereArgs, argN := buildWhereClause(params)
 
 	sql := `
@@ -85,15 +101,29 @@ func (s *svc) ListProductsPaginated(ctx context.Context, params listProductsPara
 		total = products[0].TotalCount
 	}
 
-	return paginatedProducts{
+	result := paginatedProducts{
 		Data:  products,
 		Total: total,
 		Page:  params.Page,
 		Limit: params.Limit,
-	}, nil
+	}
+
+	// Cache set
+	if key != "" {
+		cache.Set(ctx, s.cache, key, result, cache.ProductListTTL)
+	}
+
+	return result, nil
 }
 
 func (s *svc) FindProductById(ctx context.Context, id int64) (repo.FindProductByIdRow, error) {
+	// Cache check
+	key := cache.ProductDetailKey(id)
+	if cached, ok := cache.Get[repo.FindProductByIdRow](ctx, s.cache, key); ok {
+		slog.Debug("product detail cache hit", "id", id)
+		return cached, nil
+	}
+
 	product, err := s.repo.FindProductById(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -101,17 +131,29 @@ func (s *svc) FindProductById(ctx context.Context, id int64) (repo.FindProductBy
 		}
 		return repo.FindProductByIdRow{}, err
 	}
+
+	// Cache set
+	cache.Set(ctx, s.cache, key, product, cache.ProductDetailTTL)
+
 	return product, nil
 }
 
 func (s *svc) CreateProduct(ctx context.Context, tempProduct createProductParams) (repo.Product, error) {
-	return s.repo.CreateProduct(ctx, repo.CreateProductParams{
+	product, err := s.repo.CreateProduct(ctx, repo.CreateProductParams{
 		Name:         tempProduct.Name,
 		PriceInCents: tempProduct.PriceInCents,
 		Description:  tempProduct.Description,
 		ImageColor:   tempProduct.ImageColor,
 		Quantity:     tempProduct.Quantity,
 	})
+	if err != nil {
+		return repo.Product{}, err
+	}
+
+	// Invalidate list caches
+	s.cache.InvalidateByPrefix(ctx, cache.ProductListPrefix)
+
+	return product, nil
 }
 
 func (s *svc) UpdateProduct(ctx context.Context, tempProduct updateProductParams) (repo.Product, error) {
@@ -129,6 +171,11 @@ func (s *svc) UpdateProduct(ctx context.Context, tempProduct updateProductParams
 		}
 		return repo.Product{}, err
 	}
+
+	// Invalidate detail + list + category products caches
+	s.cache.Delete(ctx, cache.ProductDetailKey(tempProduct.ID))
+	s.cache.InvalidateByPrefix(ctx, cache.ProductListPrefix, cache.CategoryProductsPrefix)
+
 	return product, nil
 }
 
@@ -140,5 +187,10 @@ func (s *svc) DeleteProduct(ctx context.Context, id int64) error {
 		}
 		return err
 	}
+
+	// Invalidate detail + list + category products + category list caches
+	s.cache.Delete(ctx, cache.ProductDetailKey(id))
+	s.cache.InvalidateByPrefix(ctx, cache.ProductListPrefix, cache.CategoryProductsPrefix, cache.CategoryListPrefix)
+
 	return nil
 }

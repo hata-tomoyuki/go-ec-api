@@ -16,7 +16,7 @@ func TestCreateCategories_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, nil)
 	category, err := svc.CreateCategories(context.Background(), "Electronics", nil, "from-gray-400 to-gray-600")
 
 	if err != nil {
@@ -37,7 +37,7 @@ func TestFindCategoryById_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, nil)
 	category, err := svc.FindCategoryById(context.Background(), 1)
 
 	if err != nil {
@@ -55,7 +55,7 @@ func TestFindCategoryById_NotFound(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, nil)
 	_, err := svc.FindCategoryById(context.Background(), 999)
 
 	if !errors.Is(err, ErrCategoryNotFound) {
@@ -70,7 +70,7 @@ func TestUpdateCategories_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, nil)
 	category, err := svc.UpdateCategories(context.Background(), 1, "Updated Electronics", nil, "from-gray-400 to-gray-600")
 
 	if err != nil {
@@ -88,7 +88,7 @@ func TestUpdateCategories_NotFound(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, nil)
 	_, err := svc.UpdateCategories(context.Background(), 999, "Updated Electronics", nil, "from-gray-400 to-gray-600")
 
 	if !errors.Is(err, ErrCategoryNotFound) {
@@ -103,7 +103,7 @@ func TestDeleteCategory_Success(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, nil)
 	err := svc.DeleteCategory(context.Background(), 1)
 
 	if err != nil {
@@ -118,7 +118,7 @@ func TestDeleteCategory_NotFound(t *testing.T) {
 		},
 	}
 
-	svc := NewService(mock)
+	svc := NewService(mock, nil)
 	err := svc.DeleteCategory(context.Background(), 999)
 
 	if !errors.Is(err, ErrCategoryNotFound) {

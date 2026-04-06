@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
 )
 
 func (app *application) run(h http.Handler) error {
@@ -50,13 +51,19 @@ func (app *application) run(h http.Handler) error {
 type application struct {
 	config config
 	db     *pgxpool.Pool
+	rdb    *redis.Client
 }
 
 type config struct {
-	addr string
-	db   dbConfig
+	addr  string
+	db    dbConfig
+	redis redisConfig
 }
 
 type dbConfig struct {
 	dsn string
+}
+
+type redisConfig struct {
+	addr string
 }

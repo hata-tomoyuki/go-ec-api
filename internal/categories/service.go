@@ -3,21 +3,24 @@ package categories
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	repo "example.com/ecommerce/internal/adapters/postgresql/sqlc"
+	"example.com/ecommerce/internal/cache"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type svc struct {
-	repo repo.Querier
-	db   repo.DBTX
+	repo  repo.Querier
+	db    repo.DBTX
+	cache *cache.Store
 }
 
-func NewService(repo repo.Querier, db ...repo.DBTX) Service {
-	s := &svc{repo: repo}
-	if len(db) > 0 {
-		s.db = db[0]
+func NewService(repo repo.Querier, db repo.DBTX, cacheStore ...*cache.Store) Service {
+	s := &svc{repo: repo, db: db}
+	if len(cacheStore) > 0 {
+		s.cache = cacheStore[0]
 	}
 	return s
 }
@@ -27,6 +30,13 @@ func (s *svc) ListCategories(ctx context.Context) ([]repo.ListCategoriesRow, err
 }
 
 func (s *svc) ListCategoriesPaginated(ctx context.Context, params listCategoriesParams) (paginatedCategories, error) {
+	// Cache check
+	key := cache.CategoryListKey(params.Page, params.Limit)
+	if cached, ok := cache.Get[paginatedCategories](ctx, s.cache, key); ok {
+		slog.Debug("categories list cache hit", "key", key)
+		return cached, nil
+	}
+
 	offset := (params.Page - 1) * params.Limit
 
 	sql := `
@@ -58,12 +68,17 @@ func (s *svc) ListCategoriesPaginated(ctx context.Context, params listCategories
 		total = cats[0].TotalCount
 	}
 
-	return paginatedCategories{
+	result := paginatedCategories{
 		Data:  cats,
 		Total: total,
 		Page:  params.Page,
 		Limit: params.Limit,
-	}, nil
+	}
+
+	// Cache set
+	cache.Set(ctx, s.cache, key, result, cache.CategoryListTTL)
+
+	return result, nil
 }
 
 func (s *svc) CreateCategories(ctx context.Context, name string, description *string, imageColor string) (repo.Category, error) {
@@ -75,14 +90,29 @@ func (s *svc) CreateCategories(ctx context.Context, name string, description *st
 		}
 	}
 
-	return s.repo.CreateCategory(ctx, repo.CreateCategoryParams{
+	category, err := s.repo.CreateCategory(ctx, repo.CreateCategoryParams{
 		Name:        name,
 		Description: desc,
 		ImageColor:  imageColor,
 	})
+	if err != nil {
+		return repo.Category{}, err
+	}
+
+	// Invalidate list caches
+	s.cache.InvalidateByPrefix(ctx, cache.CategoryListPrefix)
+
+	return category, nil
 }
 
 func (s *svc) FindCategoryById(ctx context.Context, id int64) (repo.FindCategoryByIdRow, error) {
+	// Cache check
+	key := cache.CategoryDetailKey(id)
+	if cached, ok := cache.Get[repo.FindCategoryByIdRow](ctx, s.cache, key); ok {
+		slog.Debug("category detail cache hit", "id", id)
+		return cached, nil
+	}
+
 	category, err := s.repo.FindCategoryById(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -90,6 +120,10 @@ func (s *svc) FindCategoryById(ctx context.Context, id int64) (repo.FindCategory
 		}
 		return repo.FindCategoryByIdRow{}, err
 	}
+
+	// Cache set
+	cache.Set(ctx, s.cache, key, category, cache.CategoryDetailTTL)
+
 	return category, nil
 }
 
@@ -114,6 +148,11 @@ func (s *svc) UpdateCategories(ctx context.Context, id int64, name string, descr
 		}
 		return repo.Category{}, err
 	}
+
+	// Invalidate detail + list caches
+	s.cache.Delete(ctx, cache.CategoryDetailKey(id))
+	s.cache.InvalidateByPrefix(ctx, cache.CategoryListPrefix)
+
 	return category, nil
 }
 
@@ -125,23 +164,63 @@ func (s *svc) DeleteCategory(ctx context.Context, id int64) error {
 		}
 		return err
 	}
+
+	// Invalidate detail + list + category products caches
+	s.cache.Delete(ctx, cache.CategoryDetailKey(id))
+	s.cache.InvalidateByPrefix(ctx, cache.CategoryListPrefix, cache.CategoryProductsPrefix)
+
 	return nil
 }
 
 func (s *svc) ListProductsByCategory(ctx context.Context, categoryId int64) ([]repo.ListProductsByCategoryRow, error) {
-	return s.repo.ListProductsByCategory(ctx, categoryId)
+	// Cache check
+	key := cache.CategoryProductsKey(categoryId)
+	if cached, ok := cache.Get[[]repo.ListProductsByCategoryRow](ctx, s.cache, key); ok {
+		slog.Debug("category products cache hit", "categoryId", categoryId)
+		return cached, nil
+	}
+
+	products, err := s.repo.ListProductsByCategory(ctx, categoryId)
+	if err != nil {
+		return nil, err
+	}
+
+	// Cache set
+	cache.Set(ctx, s.cache, key, products, cache.CategoryProductsTTL)
+
+	return products, nil
 }
 
 func (s *svc) AddProductToCategory(ctx context.Context, categoryId int64, productId int64) error {
-	return s.repo.AddProductToCategory(ctx, repo.AddProductToCategoryParams{
+	err := s.repo.AddProductToCategory(ctx, repo.AddProductToCategoryParams{
 		ProductID:  productId,
 		CategoryID: categoryId,
 	})
+	if err != nil {
+		return err
+	}
+
+	// Invalidate related caches
+	s.cache.Delete(ctx, cache.CategoryProductsKey(categoryId))
+	s.cache.Delete(ctx, cache.CategoryDetailKey(categoryId))
+	s.cache.InvalidateByPrefix(ctx, cache.CategoryListPrefix, cache.ProductListPrefix)
+
+	return nil
 }
 
 func (s *svc) RemoveProductFromCategory(ctx context.Context, categoryId int64, productId int64) error {
-	return s.repo.RemoveProductFromCategory(ctx, repo.RemoveProductFromCategoryParams{
+	err := s.repo.RemoveProductFromCategory(ctx, repo.RemoveProductFromCategoryParams{
 		ProductID:  productId,
 		CategoryID: categoryId,
 	})
+	if err != nil {
+		return err
+	}
+
+	// Invalidate related caches
+	s.cache.Delete(ctx, cache.CategoryProductsKey(categoryId))
+	s.cache.Delete(ctx, cache.CategoryDetailKey(categoryId))
+	s.cache.InvalidateByPrefix(ctx, cache.CategoryListPrefix, cache.ProductListPrefix)
+
+	return nil
 }
