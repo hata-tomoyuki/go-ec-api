@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"time"
 
@@ -39,8 +40,30 @@ func (app *application) mount() http.Handler {
 
 	r.Handle("/metrics", promhttp.Handler())
 
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello, World!"))
+	// Liveness probe — プロセス生存確認のみ
+	r.Get("/health/live", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"status":"ok"}`))
+	})
+
+	// Readiness probe — 依存サービス (DB・Redis) の接続確認
+	r.Get("/health/ready", func(w http.ResponseWriter, r *http.Request) {
+		dbStatus := "up"
+		if err := app.db.Ping(r.Context()); err != nil {
+			dbStatus = "down"
+		}
+		redisStatus := "up"
+		if err := app.rdb.Ping(r.Context()).Err(); err != nil {
+			redisStatus = "down"
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if dbStatus == "down" || redisStatus == "down" {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			fmt.Fprintf(w, `{"status":"not_ready","db":"%s","redis":"%s"}`, dbStatus, redisStatus)
+			return
+		}
+		fmt.Fprintf(w, `{"status":"ready","db":"%s","redis":"%s"}`, dbStatus, redisStatus)
 	})
 
 	queries := repo.New(app.db)
